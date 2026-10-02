@@ -10,6 +10,10 @@ Local-first multi-agent investment research platform with:
 
 This repository is research-only. It does not place trades.
 
+### About this repository
+
+This is a **public fork and extension** of [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents). It adds local screening, a web UI, reporting/backtests, and operator workflows on top of the upstream multi-agent research stack. To sync with the original project, use the `upstream` remote (`git fetch upstream`). Code is distributed under the [Apache License 2.0](LICENSE) where applicable.
+
 ---
 
 ## Minimal Docs Set (Canonical)
@@ -26,7 +30,7 @@ This repository is research-only. It does not place trades.
 ### 1) Install
 
 ```bash
-git clone https://github.com/TauricResearch/TradingAgents.git
+git clone https://github.com/jon-vargas/TradingAgents.git
 cd TradingAgents
 pip install -r requirements.txt
 pip install -e .
