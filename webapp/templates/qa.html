@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}QA / Health - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">QA / Health</h1>
+  <p class="page-subtitle">Quality assurance and system health overview</p>
+</div>
+
+<!-- Summary Stats -->
+<div class="stats-grid" id="qa-stats">
+  <div class="loading"><span class="spinner"></span> Loading...</div>
+</div>
+
+<!-- Warning Breakdown -->
+<div class="card" data-collapsible data-collapse-id="qa-warnings" style="margin-top: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Warning Breakdown</h2>
+  </div>
+  <div id="warnings-table">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- API Keys Status -->
+<div class="card" data-collapsible data-collapse-id="qa-keys" style="margin-top: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">API Keys Status</h2>
+  </div>
+  <div id="api-keys-status">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load QA summary
+fetch('/api/qa')
+  .then(res => res.json())
+  .then(data => {
+    // Stats
+    const totalWarnings = Object.values(data.warnings).reduce((a, b) => a + b, 0);
+    const warningTypes = Object.keys(data.warnings).length;
+    
+    document.getElementById('qa-stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Analyses</div>
+        <div class="stat-value">${data.total_analyses}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Warnings</div>
+        <div class="stat-value">${totalWarnings}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Warning Types</div>
+        <div class="stat-value">${warningTypes}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Warnings/Analysis</div>
+        <div class="stat-value">${data.total_analyses > 0 ? (totalWarnings / data.total_analyses).toFixed(1) : 0}</div>
+      </div>
+    `;
+    
+    // Warnings table
+    const warnings = Object.entries(data.warnings).sort((a, b) => b[1] - a[1]);
+    if (warnings.length === 0) {
+      document.getElementById('warnings-table').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">✅</div>
+          <div class="empty-state-title">No warnings</div>
+          <p>All analyses passed QA checks.</p>
+        </div>
+      `;
+    } else {
+      let rows = warnings.map(([warning, count]) => {
+        const severity = warning.includes('missing') || warning.includes('low') ? 'warning' : 
+                        warning.includes('error') || warning.includes('fail') ? 'error' : 'success';
+        return `
+          <tr>
+            <td><span class="badge badge-${severity}">${warning}</span></td>
+            <td>${count}</td>
+            <td>${(count / data.total_analyses * 100).toFixed(1)}%</td>
+          </tr>
+        `;
+      }).join('');
+      
+      document.getElementById('warnings-table').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Warning Type</th>
+              <th>Count</th>
+              <th>% of Analyses</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+  });
+
+// Load API keys status
+fetch('/api/settings')
+  .then(res => res.json())
+  .then(data => {
+    const keys = data.api_keys || {};
+    let rows = Object.entries(keys).map(([key, configured]) => `
+      <tr>
+        <td>${key.replace('_', ' ').toUpperCase()}</td>
+        <td>
+          <span class="badge ${configured ? 'badge-success' : 'badge-error'}">
+            ${configured ? '✓ Configured' : '✗ Missing'}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+    
+    document.getElementById('api-keys-status').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>API Key</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  });
+</script>
+{% endblock %}

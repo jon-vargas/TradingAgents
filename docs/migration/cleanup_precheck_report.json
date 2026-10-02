@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-04-22T00:00:00+00:00",
+  "mode": "clean_restart_v1",
+  "checks": {
+    "legacy_aliases_loaded": true,
+    "scheduler_conflict": false,
+    "active_screen_all_job": false
+  },
+  "notes": [
+    "This artifact is a versioned precheck template for migration QA.",
+    "Runtime precheck details are available from GET /api/watchlists/migration/precheck."
+  ]
+}

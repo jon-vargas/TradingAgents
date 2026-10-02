@@ -1,6 +1,6 @@
-from typing import Annotated, Sequence
+from typing import Annotated, Any, Dict, Optional, Sequence
 from datetime import date, timedelta, datetime
-from typing_extensions import TypedDict, Optional
+from typing_extensions import TypedDict
 from langchain_openai import ChatOpenAI
 from tradingagents.agents import *
 from langgraph.prebuilt import ToolNode
@@ -50,16 +50,41 @@ class RiskDebateState(TypedDict):
 class AgentState(MessagesState):
     company_of_interest: Annotated[str, "Company that we are interested in trading"]
     trade_date: Annotated[str, "What date we are trading at"]
+    instrument_context: Annotated[str, "Resolved ticker identity context for all agents"]
+    instrument_identity: Annotated[dict, "Deterministic ticker identity metadata"]
+    investment_profile: Annotated[dict, "Investment profile with per-agent focus directives"]
+    investment_profile_key: Annotated[Optional[str], "Resolved investment-profile key"]
+    investment_profile_resolved_from: Annotated[Optional[str], "Profile resolution provenance"]
+    risk_profile: Annotated[str, "Risk profile: aggressive, growth, or conservative"]
 
     sender: Annotated[str, "Agent that sent this message"]
 
     # research step
     market_report: Annotated[str, "Report from the Market Analyst"]
-    sentiment_report: Annotated[str, "Report from the Social Media Analyst"]
+    sentiment_report: Annotated[str, "Report from the News Sentiment Analyst"]
     news_report: Annotated[
         str, "Report from the News Researcher of current world affairs"
     ]
     fundamentals_report: Annotated[str, "Report from the Fundamentals Researcher"]
+
+    # Deep research snapshots (optional)
+    sec_filings_snapshot: Annotated[str, "Structured SEC filings snapshot"]
+    earnings_transcript_snapshot: Annotated[str, "Structured earnings transcript snapshot"]
+
+    # Institutional analysis data (populated by fundamentals_analyst and news_analyst)
+    earnings_quality: Annotated[Optional[Dict[str, Any]], "Earnings quality metrics and grade"]
+    intrinsic_value: Annotated[Optional[Dict[str, Any]], "DCF intrinsic value computation"]
+    scenario_analysis: Annotated[Optional[Dict[str, Any]], "Bull/base/bear scenario analysis"]
+    catalyst_pipeline: Annotated[Optional[str], "Upcoming catalysts from Perplexity research"]
+    # Plan B Phase 1-2: extended institutional analysis
+    peer_comps: Annotated[Optional[Dict[str, Any]], "Peer comparison table (P/E, P/S, EV/EBITDA medians + percentile)"]
+    factor_scorecard: Annotated[Optional[Dict[str, float]], "7-family factor scorecard from screening signals (Value, Quality, Momentum, Revisions, Catalyst, Risk, Macro-Fit), each 0-100"]
+    screening_context: Annotated[Optional[Dict[str, Any]], "Screening handoff packet from screener (opp score, flags, scorecard)"]
+    risk_metrics: Annotated[Optional[Dict[str, Any]], "Quantitative risk metrics (beta, drawdown, VaR)"]
+    effective_risk_limits: Annotated[Optional[Dict[str, float]], "Profile-aware effective risk gates"]
+    sell_guardrail_triggered: Annotated[Optional[bool], "Warn-only weak SELL guardrail state"]
+    sell_guardrail_reason: Annotated[Optional[str], "Weak SELL guardrail explanation"]
+    macro_snapshot: Annotated[Optional[Dict[str, Any]], "Graph-owned macro snapshot frozen at trade_date"]
 
     # researcher team discussion step
     investment_debate_state: Annotated[

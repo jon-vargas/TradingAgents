@@ -1,4 +1,9 @@
+import logging
+
 from .alpha_vantage_common import _make_api_request
+
+logger = logging.getLogger("tradingagents.dataflows.alpha_vantage_indicator")
+
 
 def get_indicator(
     symbol: str,
@@ -218,5 +223,5 @@ def get_indicator(
         return result_str
 
     except Exception as e:
-        print(f"Error getting Alpha Vantage indicator data for {indicator}: {e}")
+        logger.error(f"Error getting Alpha Vantage indicator data for {indicator}: {e}")
         return f"Error retrieving {indicator} data: {str(e)}"

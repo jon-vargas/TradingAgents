@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Alerts</h1>
+  <p class="page-subtitle">Monitor stocks with automated alert rules</p>
+</div>
+
+<!-- Quick Alert Templates -->
+<div class="card" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h3>Quick Templates</h3>
+    <button class="btn btn-sm" id="toggle-templates-btn" onclick="toggleTemplates()">Show Templates</button>
+  </div>
+  <div class="card-body" id="templates-panel" style="display: none;">
+    <p class="text-muted" style="font-size: var(--text-sm); margin-bottom: var(--spacing-3);">
+      One-click alert presets. Enter a ticker, then click a template to create the rule instantly.
+    </p>
+    <div style="margin-bottom: var(--spacing-3);">
+      <label class="form-label">Ticker for templates</label>
+      <input type="text" id="template-ticker" class="form-input" placeholder="AAPL" style="text-transform: uppercase; max-width: 200px;">
+    </div>
+    <div id="template-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--spacing-3);"></div>
+  </div>
+</div>
+
+<!-- Create Alert Rule -->
+<div class="card" data-collapsible data-collapse-id="alert-create" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h3>Create Alert Rule</h3>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--spacing-4); align-items: end; margin-bottom: var(--spacing-4);">
+      <div>
+        <label class="form-label">Ticker</label>
+        <input type="text" id="rule-ticker" class="form-input" placeholder="AAPL" style="text-transform: uppercase;">
+      </div>
+      <div>
+        <label class="form-label">Alert Type</label>
+        <select id="rule-type" class="form-select" onchange="updateConditionForm()">
+          <option value="">Loading types...</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="createRule()">Create Rule</button>
+      </div>
+    </div>
+    <div id="type-description" style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--spacing-3);"></div>
+    <div id="condition-form" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--spacing-3);"></div>
+  </div>
+</div>
+
+<!-- Active Rules -->
+<div class="card" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h3>Active Rules</h3>
+    <span id="rules-count" class="text-muted" style="font-size: var(--text-sm);"></span>
+  </div>
+  <div class="card-body">
+    <div style="overflow-x: auto;">
+      <table class="data-table" id="rules-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Type</th>
+            <th>Condition</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rules-body">
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading rules...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Alert History -->
+<div class="card" data-collapsible data-collapse-id="alert-history" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h3>Alert History</h3>
+    <div style="display: flex; gap: var(--spacing-2);">
+      <span id="unread-count-label" class="text-muted" style="font-size: var(--text-sm); align-self: center;"></span>
+      <button class="btn btn-sm" onclick="markAllRead()">Mark All Read</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div style="overflow-x: auto;">
+      <table class="data-table" id="history-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Ticker</th>
+            <th>Type</th>
+            <th>Message</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading history...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display: flex; justify-content: center; gap: var(--spacing-3); margin-top: var(--spacing-4);">
+      <button class="btn btn-sm" id="history-prev" onclick="loadHistory(historyOffset - 50)" disabled>Previous</button>
+      <button class="btn btn-sm" id="history-next" onclick="loadHistory(historyOffset + 50)">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Monitor Status -->
+<div class="card" data-collapsible data-collapse-id="alert-monitor" data-collapsed>
+  <div class="card-header">
+    <h3>Monitor Status</h3>
+  </div>
+  <div class="card-body">
+    <div id="monitor-status" style="display: flex; gap: var(--spacing-6); flex-wrap: wrap;">
+      <div>
+        <span class="text-muted" style="font-size: var(--text-sm);">Background Monitor</span>
+        <div id="monitor-running" style="font-weight: 600; margin-top: 2px;">Checking...</div>
+      </div>
+      <div>
+        <span class="text-muted" style="font-size: var(--text-sm);">Market Status</span>
+        <div id="monitor-market" style="font-weight: 600; margin-top: 2px;">—</div>
+      </div>
+      <div>
+        <span class="text-muted" style="font-size: var(--text-sm);">Active Interval</span>
+        <div id="monitor-interval" style="font-weight: 600; margin-top: 2px;">—</div>
+      </div>
+      <div>
+        <span class="text-muted" style="font-size: var(--text-sm);">Market Hours</span>
+        <div id="monitor-mh-interval" style="font-weight: 600; margin-top: 2px; font-size: var(--text-sm);">—</div>
+      </div>
+      <div>
+        <span class="text-muted" style="font-size: var(--text-sm);">After Hours</span>
+        <div id="monitor-ah-interval" style="font-weight: 600; margin-top: 2px; font-size: var(--text-sm);">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ========== State ==========
+  let alertTypes = [];
+  let historyOffset = 0;
+
+  // ========== Alert Rule Templates ==========
+  const ALERT_TEMPLATES = [
+    {
+      name: 'Price Breakout',
+      icon: '📈',
+      description: 'Alert when price crosses above a target',
+      type: 'price_cross',
+      condition: { direction: 'above', price: 0 },
+      hint: 'Set target price after creation',
+    },
+    {
+      name: 'Price Breakdown',
+      icon: '📉',
+      description: 'Alert when price drops below support level',
+      type: 'price_cross',
+      condition: { direction: 'below', price: 0 },
+      hint: 'Set support price after creation',
+    },
+    {
+      name: 'Volume Spike',
+      icon: '🔊',
+      description: 'Alert on 2x normal volume (institutional activity)',
+      type: 'volume_spike',
+      condition: { multiplier: 2.0, lookback: 20 },
+    },
+    {
+      name: 'RSI Oversold',
+      icon: '🟢',
+      description: 'Alert when RSI drops below 30 (potential bounce)',
+      type: 'rsi_extreme',
+      condition: { overbought: 70, oversold: 30, period: 14 },
+    },
+    {
+      name: 'RSI Overbought',
+      icon: '🔴',
+      description: 'Alert when RSI rises above 70 (potential reversal)',
+      type: 'rsi_extreme',
+      condition: { overbought: 70, oversold: 30, period: 14 },
+    },
+    {
+      name: 'Golden Cross',
+      icon: '✨',
+      description: '50-day MA crosses above 200-day MA (bullish)',
+      type: 'ma_crossover',
+      condition: { fast_period: 50, slow_period: 200 },
+    },
+    {
+      name: 'Death Cross',
+      icon: '💀',
+      description: '50-day MA crosses below 200-day MA (bearish)',
+      type: 'ma_crossover',
+      condition: { fast_period: 50, slow_period: 200 },
+    },
+    {
+      name: 'Earnings Watch',
+      icon: '📅',
+      description: 'Alert 14 days before earnings announcement',
+      type: 'earnings_approaching',
+      condition: { days_before: 14 },
+    },
+    {
+      name: 'Rating Change',
+      icon: '⭐',
+      description: 'Alert when analyst rating changes',
+      type: 'rating_change',
+      condition: {},
+    },
+    {
+      name: 'Catalyst Approaching',
+      icon: '📆',
+      description: 'Alert when an ex-dividend or stock split is within 14 days',
+      type: 'catalyst_approaching',
+      condition: { days_before: 14 },
+      hint: 'Fires when ex-div or split date is within the configured days threshold',
+    },
+    {
+      name: 'Short Squeeze Setup',
+      icon: '🚀',
+      description: 'Alert when short interest exceeds 15%',
+      type: 'short_interest_spike',
+      condition: { threshold: 15.0 },
+    },
+  ];
+
+  function toggleTemplates() {
+    const panel = document.getElementById('templates-panel');
+    const btn = document.getElementById('toggle-templates-btn');
+    if (panel.style.display === 'none') {
+      panel.style.display = 'block';
+      btn.textContent = 'Hide Templates';
+      renderTemplates();
+    } else {
+      panel.style.display = 'none';
+      btn.textContent = 'Show Templates';
+    }
+  }
+
+  function renderTemplates() {
+    const grid = document.getElementById('template-grid');
+    grid.innerHTML = ALERT_TEMPLATES.map((t, i) => `
+      <div style="border: 1px solid var(--border); border-radius: var(--radius); padding: var(--spacing-3); cursor: pointer; transition: all 0.15s;"
+           onmouseenter="this.style.borderColor='var(--accent)';this.style.background='var(--bg-hover)'"
+           onmouseleave="this.style.borderColor='var(--border)';this.style.background=''"
+           onclick="applyTemplate(${i})">
+        <div style="display: flex; align-items: center; gap: var(--spacing-2); margin-bottom: 4px;">
+          <span style="font-size: 1.2em;">${t.icon}</span>
+          <strong style="font-size: var(--text-sm);">${t.name}</strong>
+        </div>
+        <div style="font-size: var(--text-xs); color: var(--text-muted);">${t.description}</div>
+      </div>
+    `).join('');
+  }
+
+  function applyTemplate(index) {
+    const t = ALERT_TEMPLATES[index];
+    const ticker = document.getElementById('template-ticker').value.trim().toUpperCase();
+    if (!ticker) {
+      alert('Enter a ticker symbol first');
+      document.getElementById('template-ticker').focus();
+      return;
+    }
+
+    // Submit the rule directly
+    fetch('/api/alerts/rules', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        ticker: ticker,
+        alert_type: t.type,
+        condition: t.condition,
+      }),
+    })
+    .then(r => { if (!r.ok) throw new Error('Failed to create rule'); return r.json(); })
+    .then(data => {
+      loadRules();
+      // Show brief success message
+      const grid = document.getElementById('template-grid');
+      const msg = document.createElement('div');
+      msg.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--qa-green);color:var(--bg-primary);padding:10px 20px;border-radius:8px;font-weight:600;z-index:9999;animation:fadeIn .2s';
+      msg.textContent = `✓ ${t.name} alert created for ${ticker}`;
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 2500);
+    })
+    .catch(err => alert('Failed to create rule: ' + err.message));
+  }
+
+  // ========== Init ==========
+  document.addEventListener('DOMContentLoaded', function() {
+    loadAlertTypes();
+    loadRules();
+    loadHistory(0);
+    loadMonitorStatus();
+  });
+
+  // ========== Alert Types ==========
+  function loadAlertTypes() {
+    fetch('/api/alerts/types')
+      .then(r => r.json())
+      .then(data => {
+        alertTypes = data.types || [];
+        const sel = document.getElementById('rule-type');
+        sel.innerHTML = alertTypes.map(t =>
+          `<option value="${t.type}">${formatAlertType(t.type)}</option>`
+        ).join('');
+        updateConditionForm();
+      });
+  }
+
+  function formatAlertType(type) {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function updateConditionForm() {
+    const type = document.getElementById('rule-type').value;
+    const typeInfo = alertTypes.find(t => t.type === type);
+    if (!typeInfo) return;
+
+    document.getElementById('type-description').textContent = typeInfo.description || '';
+
+    const defaults = typeInfo.default_condition || {};
+    const form = document.getElementById('condition-form');
+    form.innerHTML = '';
+
+    for (const [key, value] of Object.entries(defaults)) {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const inputType = typeof value === 'number' ? 'number' : 'text';
+      form.innerHTML += `
+        <div>
+          <label class="form-label">${label}</label>
+          <input type="${inputType}" class="form-input condition-input" 
+                 data-key="${key}" value="${value}" 
+                 ${inputType === 'number' ? 'step="any"' : ''}>
+        </div>
+      `;
+    }
+  }
+
+  // ========== Create Rule ==========
+  function createRule() {
+    const ticker = document.getElementById('rule-ticker').value.trim().toUpperCase();
+    const type = document.getElementById('rule-type').value;
+
+    if (!ticker) {
+      alert('Please enter a ticker symbol');
+      return;
+    }
+
+    // Gather condition values
+    const condition = {};
+    document.querySelectorAll('.condition-input').forEach(input => {
+      const key = input.dataset.key;
+      let val = input.value;
+      if (input.type === 'number') val = parseFloat(val) || 0;
+      condition[key] = val;
+    });
+
+    fetch('/api/alerts/rules', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ticker, alert_type: type, condition }),
+    })
+    .then(r => { if (!r.ok) throw new Error('Failed to create rule'); return r.json(); })
+    .then(data => {
+      document.getElementById('rule-ticker').value = '';
+      loadRules();
+    })
+    .catch(err => alert(err.message));
+  }
+
+  // ========== Rules List ==========
+  function loadRules() {
+    fetch('/api/alerts/rules')
+      .then(r => r.json())
+      .then(data => {
+        const rules = data.rules || [];
+        document.getElementById('rules-count').textContent = `${rules.length} rule${rules.length !== 1 ? 's' : ''}`;
+        const body = document.getElementById('rules-body');
+
+        if (rules.length === 0) {
+          body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No alert rules yet. Create one above.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rules.map(r => `
+          <tr style="${!r.is_active ? 'opacity: 0.5;' : ''}">
+            <td><strong>${r.ticker}</strong></td>
+            <td>${formatAlertType(r.alert_type)}</td>
+            <td style="font-size: var(--text-sm);">${formatCondition(r.condition)}</td>
+            <td>
+              <span class="badge ${r.is_active ? 'badge-success' : 'badge-muted'}">
+                ${r.is_active ? 'Active' : 'Paused'}
+              </span>
+            </td>
+            <td style="font-size: var(--text-sm);">${formatDate(r.created_at)}</td>
+            <td>
+              <div style="display: flex; gap: var(--spacing-1);">
+                <button class="btn btn-sm" onclick="toggleRule(${r.id})" title="${r.is_active ? 'Pause' : 'Activate'}">
+                  ${r.is_active ? '⏸' : '▶️'}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteRule(${r.id})" title="Delete">🗑</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      });
+  }
+
+  function formatCondition(condition) {
+    if (!condition) return '—';
+    return Object.entries(condition)
+      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+      .join(', ');
+  }
+
+  function toggleRule(id) {
+    fetch(`/api/alerts/rules/${id}/toggle`, { method: 'PUT' })
+      .then(r => r.json())
+      .then(() => loadRules());
+  }
+
+  function deleteRule(id) {
+    if (!confirm('Delete this rule and all its alert history?')) return;
+    fetch(`/api/alerts/rules/${id}`, { method: 'DELETE' })
+      .then(r => r.json())
+      .then(() => { loadRules(); loadHistory(0); });
+  }
+
+  // ========== Alert History ==========
+  function loadHistory(offset) {
+    historyOffset = Math.max(0, offset);
+    fetch(`/api/alerts/history?limit=50&offset=${historyOffset}`)
+      .then(r => r.json())
+      .then(data => {
+        const alerts = data.alerts || [];
+        const body = document.getElementById('history-body');
+
+        // Update unread count
+        fetch('/api/alerts')
+          .then(r => r.json())
+          .then(d => {
+            const ct = d.unread_count || 0;
+            document.getElementById('unread-count-label').textContent = ct > 0 ? `${ct} unread` : '';
+          });
+
+        if (alerts.length === 0 && historyOffset === 0) {
+          body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No alerts yet. Alerts will appear here when rules trigger.</td></tr>';
+          document.getElementById('history-prev').disabled = true;
+          document.getElementById('history-next').disabled = true;
+          return;
+        }
+
+        body.innerHTML = alerts.map(a => `
+          <tr style="${!a.is_read ? 'background: var(--accent-muted);' : ''}">
+            <td style="font-size: var(--text-sm); white-space: nowrap;">${formatDate(a.triggered_at)}</td>
+            <td><strong>${a.ticker}</strong></td>
+            <td style="font-size: var(--text-sm);">${formatAlertType(a.alert_type)}</td>
+            <td style="font-size: var(--text-sm);">${a.message || '—'}</td>
+            <td>
+              <span class="badge ${a.is_read ? 'badge-muted' : 'badge-warning'}">
+                ${a.is_read ? 'Read' : 'Unread'}
+              </span>
+            </td>
+            <td>
+              ${!a.is_read ? `<button class="btn btn-sm" onclick="markRead(${a.id})">Mark Read</button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+
+        document.getElementById('history-prev').disabled = historyOffset === 0;
+        document.getElementById('history-next').disabled = alerts.length < 50;
+      });
+  }
+
+  function markRead(id) {
+    fetch(`/api/alerts/${id}/read`, { method: 'PUT' })
+      .then(r => r.json())
+      .then(() => loadHistory(historyOffset));
+  }
+
+  function markAllRead() {
+    fetch('/api/alerts/read-all', { method: 'PUT' })
+      .then(r => r.json())
+      .then(() => loadHistory(historyOffset));
+  }
+
+  // ========== Monitor Status ==========
+  function loadMonitorStatus() {
+    fetch('/api/alerts/monitor/status')
+      .then(r => r.json())
+      .then(data => {
+        const running = document.getElementById('monitor-running');
+        const interval = document.getElementById('monitor-interval');
+        const market = document.getElementById('monitor-market');
+        const mhInterval = document.getElementById('monitor-mh-interval');
+        const ahInterval = document.getElementById('monitor-ah-interval');
+
+        running.innerHTML = data.is_running
+          ? '<span style="color: var(--success);">Running</span>'
+          : '<span style="color: var(--danger);">Stopped</span>';
+
+        if (data.is_market_hours) {
+          market.innerHTML = '<span style="color: var(--success);">Open</span>';
+        } else {
+          market.innerHTML = '<span style="color: var(--text-muted);">Closed</span>';
+        }
+
+        interval.textContent = data.check_interval
+          ? `${data.check_interval}s (${Math.round(data.check_interval / 60)} min)`
+          : '—';
+
+        mhInterval.textContent = data.market_hours_interval
+          ? `Every ${Math.round(data.market_hours_interval / 60)} min`
+          : '—';
+        ahInterval.textContent = data.off_hours_interval
+          ? `Every ${Math.round(data.off_hours_interval / 60)} min`
+          : '—';
+      })
+      .catch(() => {
+        document.getElementById('monitor-running').textContent = 'Unknown';
+      });
+  }
+
+  // ========== Helpers ==========
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+           d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+</script>
+{% endblock %}

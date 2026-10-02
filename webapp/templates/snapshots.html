@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Snapshots - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Snapshots Library</h1>
+  <p class="page-subtitle">Browse SEC filings and earnings transcript snapshots</p>
+</div>
+
+<!-- Filters -->
+<div class="card" data-collapsible data-collapse-id="snap-filters" style="margin-bottom: var(--spacing-4);">
+  <div class="card-header"><h3 style="margin:0;">Filters</h3></div>
+  <div class="card-body" style="padding: var(--spacing-4);">
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label class="filter-label">Ticker</label>
+        <input type="text" id="filter-ticker" class="filter-input" placeholder="e.g., AAPL">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Type</label>
+        <select id="filter-type" class="filter-input">
+          <option value="">All</option>
+          <option value="sec">SEC Filings</option>
+          <option value="transcript">Transcripts</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Limit</label>
+        <select id="filter-limit" class="filter-input">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="filter-group" style="align-self: flex-end;">
+        <button class="btn btn-primary" id="apply-filters">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Snapshots Table -->
+<div class="card">
+  <div class="table-container" id="snapshots-table">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Snapshot Detail Modal -->
+<div id="snapshot-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100;">
+  <div style="background: var(--bg-primary); color: var(--text-primary); margin: 5% auto; max-width: 800px; max-height: 80vh; overflow: auto; border-radius: 8px; padding: var(--spacing-4); border: 1px solid var(--border);">
+    <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-4);">
+      <h3 id="modal-title">Snapshot</h3>
+      <button onclick="closeModal()" class="btn btn-secondary">Close</button>
+    </div>
+    <pre id="modal-content" style="background: var(--bg-secondary); padding: var(--spacing-4); border-radius: 4px; overflow: auto; font-size: var(--text-xs);"></pre>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadSnapshots() {
+  const ticker = document.getElementById('filter-ticker').value;
+  const type = document.getElementById('filter-type').value;
+  const limit = document.getElementById('filter-limit').value;
+  
+  let url = `/api/snapshots?limit=${limit}`;
+  if (ticker) url += `&ticker=${ticker.toUpperCase()}`;
+  if (type) url += `&snapshot_type=${type}`;
+  
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const container = document.getElementById('snapshots-table');
+      
+      if (data.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <div class="empty-state-title">No snapshots found</div>
+            <p>Snapshots are created during deep analyses.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let rows = data.map((s, idx) => {
+        const typeIcon = s.snapshot_type === 'sec' ? '📄' : '🎤';
+        const typeLabel = s.snapshot_type === 'sec' ? 'SEC Filing' : 'Transcript';
+        return `
+          <tr>
+            <td>${s.analysis_id}</td>
+            <td><strong>${s.ticker}</strong></td>
+            <td>${s.analysis_date}</td>
+            <td>${typeIcon} ${typeLabel}</td>
+            <td>${s.created_at ? s.created_at.split('T')[0] : '-'}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="viewSnapshot(${idx})">View JSON</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Analysis ID</th>
+              <th>Ticker</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+      
+      // Store data for modal
+      window._snapshots = data;
+    });
+}
+
+function viewSnapshot(idx) {
+  const snapshot = window._snapshots[idx];
+  document.getElementById('modal-title').textContent = `${snapshot.ticker} - ${snapshot.snapshot_type.toUpperCase()} Snapshot`;
+  
+  try {
+    const payload = JSON.parse(snapshot.snapshot_payload);
+    document.getElementById('modal-content').textContent = JSON.stringify(payload, null, 2);
+  } catch {
+    document.getElementById('modal-content').textContent = snapshot.snapshot_payload;
+  }
+  
+  document.getElementById('snapshot-modal').style.display = 'block';
+}
+
+function closeModal() {
+  document.getElementById('snapshot-modal').style.display = 'none';
+}
+
+document.getElementById('apply-filters').addEventListener('click', loadSnapshots);
+document.addEventListener('DOMContentLoaded', loadSnapshots);
+
+// Close modal on escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+{% endblock %}

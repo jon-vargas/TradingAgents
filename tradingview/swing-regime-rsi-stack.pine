@@ -1,0 +1,45 @@
+//@version=6
+// Multi-RSI Stack — alignment / chop pane for the Swing Regime Toolkit.
+// Add to the SAME chart as swing-regime-overlay.pine + swing-regime-momentum.pine + swing-regime-capital-flow.pine.
+indicator("Multi-RSI Stack [Swing Regime]", overlay = false, max_labels_count = 200)
+
+gStar = "Exhaustion Stars"
+starLeft = input.int(3, "Star pivot left", minval = 1, group = gStar)
+starRight = input.int(3, "Star pivot right", minval = 1, group = gStar)
+oversold = input.float(36.0, "Oversold RSI (cyan setup)", minval = 5, maxval = 50, group = gStar)
+overbought = input.float(68.0, "Overbought RSI (magenta trim)", minval = 50, maxval = 95, group = gStar)
+showStars = input.bool(true, "Exhaustion stars (setup / trim)", group = gStar)
+
+rsi5 = ta.rsi(close, 5)
+rsi8 = ta.rsi(close, 8)
+rsi13 = ta.rsi(close, 13)
+rsi14 = ta.rsi(close, 14)
+rsi21 = ta.rsi(close, 21)
+rsi34 = ta.rsi(close, 34)
+
+alignedUp = rsi5 > rsi13 and rsi13 > rsi21 and rsi5 > 55.0
+alignedDn = rsi5 < rsi13 and rsi13 < rsi21 and rsi5 < 45.0
+impulse = alignedUp or alignedDn
+fastCol = alignedUp ? color.new(#22c55e, 0) : alignedDn ? color.new(#86efac, 40) : color.new(#9ca3af, 20)
+midCol = impulse ? color.new(#86efac, 25) : color.new(#9ca3af, 35)
+slowCol = impulse ? color.new(#4b5563, 10) : color.new(#6b7280, 40)
+
+stackLow = rsi5 < oversold
+stackHigh = rsi5 > overbought and rsi14 > overbought - 8.0
+pl = ta.pivotlow(low, starLeft, starRight)
+ph = ta.pivothigh(high, starLeft, starRight)
+cyanStarHit = showStars and not na(pl) and stackLow[starRight]
+magStarHit = showStars and not na(ph) and stackHigh[starRight]
+
+plot(rsi5, "RSI 5 glow", color = color.new(#22c55e, alignedUp ? 70 : 92), linewidth = 8)
+plot(rsi5, "RSI 5", color = fastCol, linewidth = 3)
+plot(rsi8, "RSI 8", color = midCol, linewidth = 1)
+plot(rsi13, "RSI 13", color = color.new(#d1d5db, 15), linewidth = 1)
+plot(rsi14, "RSI 14", color = color.new(#9ca3af, 0), linewidth = 1)
+plot(rsi21, "RSI 21", color = slowCol, linewidth = 1)
+plot(rsi34, "RSI 34", color = color.new(#4b5563, 0), linewidth = 1)
+hline(80, "OB", color = color.new(#22c55e, 60), linestyle = hline.style_dotted)
+hline(50, "Mid", color = color.new(#6b7280, 75), linestyle = hline.style_dotted)
+hline(20, "OS", color = color.new(#6b7280, 60), linestyle = hline.style_dotted)
+plotchar(cyanStarHit, title = "Exhaustion low (setup)", char = "★", location = location.bottom, color = color.new(#22d3ee, 0), size = size.tiny, offset = -starRight)
+plotchar(magStarHit, title = "Exhaustion high (trim)", char = "★", location = location.top, color = color.new(#e879f9, 0), size = size.tiny, offset = -starRight)

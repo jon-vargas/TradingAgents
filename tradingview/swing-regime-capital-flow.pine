@@ -1,0 +1,47 @@
+//@version=6
+// Capital Flow Split — steady vs fast money pane for the Swing Regime Toolkit.
+// Gold line = steady capital (slow MFI). White line = inverted fast money (100 − fast).
+// Add to the SAME chart as swing-regime-overlay.pine + swing-regime-momentum.pine + swing-regime-rsi-stack.pine.
+indicator("Capital Flow Split [Swing Regime]", overlay = false, max_labels_count = 200)
+
+gStar = "Exhaustion Stars"
+starLeft = input.int(3, "Star pivot left", minval = 1, group = gStar)
+starRight = input.int(3, "Star pivot right", minval = 1, group = gStar)
+oversold = input.float(36.0, "Oversold RSI (cyan setup)", minval = 5, maxval = 50, group = gStar)
+overbought = input.float(68.0, "Overbought RSI (magenta trim)", minval = 50, maxval = 95, group = gStar)
+showStars = input.bool(true, "Exhaustion stars (setup / trim)", group = gStar)
+
+gFlow = "Capital Flow"
+fastLen = input.int(7, "Fast money length", minval = 2, group = gFlow)
+slowLen = input.int(21, "Steady capital length", minval = 2, group = gFlow)
+fastSmooth = input.int(3, "Fast smooth", minval = 1, group = gFlow)
+slowSmooth = input.int(8, "Slow smooth", minval = 1, group = gFlow)
+
+volOk = volume > 0
+mfiFast = ta.mfi(hlc3, fastLen)
+mfiSlow = ta.mfi(hlc3, slowLen)
+rsiFast = ta.rsi(close, fastLen)
+rsiSlow = ta.rsi(close, slowLen)
+fastSrc = volOk ? mfiFast : rsiFast
+slowSrc = volOk ? mfiSlow : rsiSlow
+fastFlow = ta.ema(fastSrc, fastSmooth)
+slowFlow = ta.ema(slowSrc, slowSmooth)
+steadyFlow = slowFlow
+fastMoneyInv = 100.0 - fastFlow
+
+rsiF = ta.rsi(close, 5)
+rsiM = ta.rsi(close, 14)
+stackLow = rsiF < oversold
+stackHigh = rsiF > overbought and rsiM > overbought - 8.0
+pl = ta.pivotlow(low, starLeft, starRight)
+ph = ta.pivothigh(high, starLeft, starRight)
+cyanStarHit = showStars and not na(pl) and stackLow[starRight]
+magStarHit = showStars and not na(ph) and stackHigh[starRight]
+
+steadyLeads = steadyFlow > fastMoneyInv
+pSteady = plot(steadyFlow, "Steady capital", color = color.new(#c9a227, 0), linewidth = 2)
+pFast = plot(fastMoneyInv, "Fast money (inverted)", color = color.new(#f8fafc, 0), linewidth = 2)
+fill(pSteady, pFast, color = steadyLeads ? color.new(#c9a227, 68) : color.new(#4b5563, 75), title = "Flow fill")
+hline(50, "Mid", color = color.new(#6b7280, 70), linestyle = hline.style_dotted)
+plotchar(cyanStarHit, title = "Exhaustion low (setup)", char = "★", location = location.bottom, color = color.new(#22d3ee, 0), size = size.tiny, offset = -starRight)
+plotchar(magStarHit, title = "Exhaustion high (trim)", char = "★", location = location.top, color = color.new(#e879f9, 0), size = size.tiny, offset = -starRight)

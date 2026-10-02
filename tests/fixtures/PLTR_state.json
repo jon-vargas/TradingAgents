@@ -1,0 +1,26 @@
+{
+  "company_of_interest": "PLTR",
+  "trade_date": "2026-01-09",
+  "sec_filings_snapshot": "{\"ticker\":\"PLTR\",\"company\":\"Palantir Technologies\",\"as_of\":\"2026-01-27\",\"filings\":[{\"form\":\"10-K\",\"filing_date\":\"2026-02-15\",\"period_end\":\"2025-12-31\",\"highlights\":[\"Revenue growth\"],\"risk_factors\":[\"Valuation risk\"],\"material_events\":[\"New commercial contracts\"]}],\"insider_activity\":[{\"name\":\"Executive\",\"role\":\"CFO\",\"transaction_type\":\"buy\",\"date\":\"2026-02-20\",\"shares\":\"15000\",\"value\":\"$2.7M\"}]}",
+  "earnings_transcript_snapshot": "{\"ticker\":\"PLTR\",\"company\":\"Palantir Technologies\",\"period\":\"FY2025 Q4\",\"call_date\":\"2026-02-14\",\"guidance\":[{\"metric\":\"revenue\",\"range\":\"$2.6B-$2.7B\",\"timeframe\":\"full year\",\"context\":\"Raised outlook\"}],\"kpis\":[{\"name\":\"Commercial customers\",\"value\":\"543\",\"period\":\"Q4\",\"context\":\"Up 20% YoY\"}],\"key_quotes\":[{\"speaker\":\"CEO\",\"quote\":\"Demand remains strong.\",\"topic\":\"Outlook\"}]}",
+  "market_report": "Analysis Report for PLTR (2025-12-01 to 2026-01-08): Recent closing price of 176.86. ATR: 7.82. The 50-day SMA is 180.59 and the 200-day SMA is 152.80. MACD is slightly negative at -0.52.\nSIGNAL_JSON: {\"section\":\"Market\",\"stance\":\"bearish\",\"confidence\":0.6,\"key_factors\":[\"MACD negative\",\"Price below 50 SMA\"]}",
+  "fundamentals_report": "Palantir Technologies Inc. overview. Current stock price: $176.86. Price to Sales Ratio: 23.5. Strong cash position and improving profitability.\nSIGNAL_JSON: {\"section\":\"Fundamentals\",\"stance\":\"bullish\",\"confidence\":0.55,\"key_factors\":[\"Profitability inflection\",\"Strong cash position\"]}",
+  "news_report": "Recent news is mixed with valuation concerns and AI adoption tailwinds.\nSIGNAL_JSON: {\"section\":\"News\",\"stance\":\"neutral\",\"confidence\":0.5,\"key_factors\":[\"Mixed analyst sentiment\"]}",
+  "sentiment_report": "Social sentiment is cautiously optimistic but volatile.\nSIGNAL_JSON: {\"section\":\"Sentiment\",\"stance\":\"neutral\",\"confidence\":0.45,\"key_factors\":[\"Retail volatility\"]}",
+  "investment_plan": "Bull Analyst: (1) AI adoption and demand expansion remain strong. BUY thesis: upside potential from AI contracts. Bear Analyst: (1) Valuation risks are elevated after a sharp run-up. SELL caution on momentum.\nSIGNAL_JSON: {\"section\":\"Research\",\"stance\":\"bearish\",\"confidence\":0.65,\"key_factors\":[\"Valuation risk\",\"Momentum weakening\"]}",
+  "trader_investment_plan": "No explicit entry levels provided. Use ATR-based stops. SELL bias until momentum stabilizes.\nSIGNAL_JSON: {\"section\":\"Trading Plan\",\"stance\":\"bearish\",\"confidence\":0.7,\"key_factors\":[\"Risk control\",\"Trend caution\"]}",
+  "final_trade_decision": "Recommendation: SELL (reduce/exit now; re-enter only on confirmation).",
+  "investment_debate_state": {
+    "bull_history": "Bull Analyst: The stock remains above the 200-day SMA and the long-term trend supports sustained growth.",
+    "bear_history": "Bear Analyst: Valuation has outrun fundamentals and recent momentum has softened.",
+    "history": "Bull Analyst: Strong AI tailwinds. Bear Analyst: Momentum weakening.",
+    "current_response": "",
+    "judge_decision": "SELL"
+  },
+  "risk_debate_state": {
+    "risky_history": "Risky Analyst: Yes, momentum is weak, but upside remains significant. A disciplined re-entry after confirmation can capture the next leg higher.",
+    "neutral_history": "Neutral Analyst: Trim exposure while monitoring the 200-day SMA and momentum indicators. Maintain a smaller core position for optionality.",
+    "safe_history": "Safe Analyst: Valuation risk and negative MACD suggest caution. Protect capital and wait for trend stabilization before re-entering.",
+    "history": "Risky Analyst: Upside opportunity. Safe Analyst: Protect capital. Neutral Analyst: Balanced approach."
+  }
+}

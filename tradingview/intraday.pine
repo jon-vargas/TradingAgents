@@ -1,0 +1,1214 @@
+//@version=6
+// MAINTENANCE NOTE (for future agents/humans):
+// This script has zero label.new/box.new/line.new calls, and every plotshape/table.cell
+// "text" argument is a short hardcoded constant (e.g. "IMP+", "OR+", status words) — Pine
+// has no mechanism for a script to render its own source code onto the chart. If the user
+// ever reports the Pine source appearing as a large block of syntax-highlighted text
+// overlaid on the chart (readable function names, ternaries, etc.), do NOT assume it is a
+// code defect. It is almost always a stray TradingView "Text" DRAWING object saved on that
+// chart layout (often from an accidental paste into a drawing tool). Drawings sync via the
+// user's TradingView account, so the artifact survives hard reloads and even switching to a
+// different browser/window/device — that persistence is the diagnostic signature. Fix:
+// Object Tree > find the Text entry under Drawings (not Indicators) > delete it, or use the
+// toolbar trash icon > "Remove Drawings > All Drawings" (does not remove the indicator).
+indicator("SPY/QQQ Intraday Regime Toolkit", overlay = true, max_labels_count = 100, max_lines_count = 100, max_bars_back = 5000, max_boxes_count = 50)
+
+// Lower-TF bar payload for a single security_lower_tf call (volume + time)
+type LtfBar
+    float vol
+    int t
+
+// =============================================================================
+// 1) INPUTS
+// =============================================================================
+gSession = "Session"
+gOR = "Opening Range"
+gVWAP = "VWAP"
+gTrend = "Trend / Regime"
+gVol = "Volume (TOD RVOL)"
+gSig = "Signals"
+gRisk = "Risk References"
+gVis = "Visuals / Table"
+gOpt = "Optional Diagnostics"
+
+rthSession = input.session("0930-1600:23456", "RTH Session", group = gSession)
+sessionTz = input.string("America/New_York", "Session Timezone", group = gSession)
+showOvernight = input.bool(true, "Show Overnight High/Low", group = gSession)
+
+orMinutes = input.int(15, "OR Minutes", options = [5, 15, 30], tooltip = "Must divide evenly into chart TF (e.g. OR30 on 30m charts; OR15 disables OR on 30m).", group = gOR)
+showOR = input.bool(true, "Show Opening Range", group = gOR)
+useAdaptiveHold = input.bool(true, "Adaptive Hold Bars", group = gOR)
+manualHoldBars = input.int(2, "Manual Hold Bars", minval = 0, group = gOR)
+
+showVWAP = input.bool(true, "Show Session VWAP", group = gVWAP)
+showVWAPBands = input.bool(true, "Show VWAP Bands", group = gVWAP)
+vwapSource = input.source(hlc3, "VWAP Source", group = gVWAP)
+bandMultiplier = input.float(1.0, "Band σ Multiplier", minval = 0.1, step = 0.1, group = gVWAP)
+showAnchoredVwap = input.bool(false, "Show Prior-Close Anchored VWAP", group = gVWAP)
+includeEthInAnchoredVwap = input.bool(false, "Anchored VWAP include ETH", group = gVWAP)
+
+atrLength = input.int(14, "ATR Length", minval = 1, group = gTrend)
+adxLength = input.int(14, "ADX Length", minval = 2, group = gTrend)
+adxThreshold = input.float(20.0, "ADX Threshold", minval = 1.0, group = gTrend)
+slopeBars = input.int(5, "VWAP Slope Bars", minval = 1, group = gTrend)
+minRegimeMinutes = input.int(5, "Min Regime Minutes", minval = 1, group = gTrend)
+usePercentileVol = input.bool(false, "Optional percentile vol dimension", group = gTrend)
+pctLookback = input.int(60, "Percentile lookback (bars)", minval = 20, group = gTrend)
+pctThresh = input.float(50.0, "Percentile threshold", minval = 1.0, maxval = 99.0, group = gTrend)
+showKeltner = input.bool(false, "Show Keltner Channel", group = gTrend)
+keltnerLength = input.int(20, "Keltner EMA Length", minval = 1, group = gTrend)
+keltnerMultiplier = input.float(1.5, "Keltner ATR Multiplier", minval = 0.1, step = 0.1, group = gTrend)
+
+N_MIN = 5
+todRvolLookback = input.int(20, "TOD RVOL lookback sessions", minval = 5, maxval = 255, group = gVol)
+// Floor ≈ average participation. 1.2–1.5 was too strict as a universal gate on quiet SPY days.
+todRvolThreshold = input.float(1.0, "RVOL floor (MR / failed-OR)", minval = 0.1, step = 0.1, group = gVol)
+continuationRvolThreshold = input.float(1.25, "RVOL for trend continuation", minval = 0.1, step = 0.1, group = gVol)
+rangeConfirmAtr = input.float(1.0, "Non-volume range confirm × ATR", minval = 0.1, step = 0.1, group = gVol)
+showRvolBars = input.bool(true, "Highlight High TOD RVol Bars", group = gVol)
+
+useHtfFilter = input.bool(true, "Require Confirmed HTF Direction", tooltip = "Gates OR continuation and VWAP pullback only. Mean-reversion (failed-OR / band MR) stay ungated. Impulse has its own optional HTF toggle (default off).", group = gSig)
+useStructureFilter = input.bool(false, "Require Price Structure (optional)", group = gSig)
+structureLength = input.int(3, "Structure / RSI Pivot Length", minval = 1, group = gSig)
+useVwapDistanceFilter = input.bool(true, "Reject Extended VWAP Continuations", group = gSig)
+maxVwapDistanceAtr = input.float(2.0, "Max VWAP Distance ATR", minval = 0.25, step = 0.25, group = gSig)
+useFailedReversals = input.bool(true, "Enable Failed OR Reversals", group = gSig)
+failureWindowBars = input.int(5, "Failure Window Bars", minval = 2, maxval = 20, group = gSig)
+failureDistanceAtr = input.float(0.5, "Failure Distance ATR", minval = 0.1, step = 0.1, group = gSig)
+useVwapPullback = input.bool(true, "Enable VWAP Pullback Continuation", group = gSig)
+useVwapMeanRev = input.bool(true, "Enable VWAP Band Mean Reversion", group = gSig)
+useRsiFilter = input.bool(true, "RSI extremes on mean reversion", group = gSig)
+useRsiDivergence = input.bool(false, "Optional RSI divergence add-on", group = gSig)
+rsiLength = input.int(14, "RSI Length", minval = 2, group = gSig)
+rsiDivMaxSep = input.int(20, "RSI divergence max pivot separation", minval = 2, group = gSig)
+bandFadeMinutes = input.int(30, "Band-fade min minutes from open", minval = 0, group = gSig)
+bandFadeVolPct = input.float(20.0, "Band-fade cum vol % of avg day", minval = 1.0, step = 1.0, group = gSig)
+manualCooldownBars = input.int(-1, "Alert cooldown override (-1 = adaptive)", minval = -1, group = gSig)
+showRejected = input.bool(false, "Show Rejected Signals", group = gSig)
+
+// Impulse Run — catches grind + impulse sequences (soft RVOL; Transition allowed by default)
+gImpulse = "Impulse Run"
+useImpulseRun = input.bool(true, "Enable Impulse Run markers", group = gImpulse)
+impulseAdaptiveTf = input.bool(true, "TF-adaptive bar count / ATR", group = gImpulse)
+impulseBarsReqIn = input.int(3, "Consecutive bars (manual)", minval = 2, maxval = 8, group = gImpulse)
+impulseEarlyBarsIn = input.int(2, "Entry bar count hint (0=use full req)", minval = 0, maxval = 7, group = gImpulse)
+
+impulseAtrMultIn = input.float(0.45, "Min bar range × ATR (manual)", minval = 0.1, step = 0.05, group = gImpulse)
+impulseUseGrind = input.bool(true, "Count grind bars (directional closes)", group = gImpulse)
+impulseCloseExtreme = input.bool(false, "Require close in outer 30% (strict)", group = gImpulse)
+impulseUseVwapSide = input.bool(true, "Align with VWAP side", group = gImpulse)
+impulseAllowTransition = input.bool(true, "Allow Impulse in Transition", group = gImpulse)
+impulseSoftRvol = input.bool(true, "Soft RVOL (block warming only)", group = gImpulse)
+impulseHtfMode = input.string("Auto (≤3m)", "Impulse HTF bias", options = ["Auto (≤3m)", "Always", "Off"], tooltip = "Auto: require HTF bias on 1–3m only (timing charts). 5m+ stay soft so quiet grind days still mark.", group = gImpulse)
+impulseTrendOnly = input.bool(false, "Impulse in Trend regime only", group = gImpulse)
+impulseShowLabels = input.bool(false, "Show IMP+/IMP- text labels", group = gImpulse)
+
+
+maxStopAtrMultiple = input.float(3.0, "Max stop × ATR", minval = 0.5, step = 0.25, group = gRisk)
+fallbackAtrMult = input.float(1.0, "Target ATR fallback × ATR", minval = 0.25, step = 0.25, group = gRisk)
+stopAtrMult = input.float(1.0, "Stop ATR fallback × ATR", minval = 0.25, step = 0.25, group = gRisk)
+invBufferAtr = input.float(0.25, "Invalidation buffer × ATR", minval = 0.0, step = 0.05, group = gRisk)
+showRiskRefs = input.bool(true, "Show invalidation / target refs", tooltip = "Consider disabling on 1m layouts — refs fade after the last alert.", group = gRisk)
+
+showTable = input.bool(true, "Show Status Table", group = gVis)
+tableCompact = input.bool(true, "Compact table (less intrusive)", group = gVis)
+tablePosInput = input.string("Top Right", "Table position", options = ["Top Right", "Bottom Left", "Bottom Right", "Top Left"], group = gVis)
+gapSmallPct = input.float(0.3, "Gap small |%| <", minval = 0.05, step = 0.05, group = gVis)
+gapMedPct = input.float(1.0, "Gap medium |%| ≤", minval = 0.1, step = 0.05, group = gVis)
+
+useInternals = input.bool(false, "Market internals ($TICK/$ADD)", group = gOpt)
+// TradingView breadth symbols are under USI (not NYSE:TICK / NYSE:ADD — those are invalid)
+tickSymbol = input.symbol("USI:TICK", "TICK symbol", group = gOpt)
+addSymbol = input.symbol("USI:ADD", "ADD symbol", group = gOpt)
+useCrossLeadership = input.bool(false, "SPY/QQQ leadership check", group = gOpt)
+spySymbol = input.symbol("AMEX:SPY", "SPY symbol (leadership)", group = gOpt)
+qqqSymbol = input.symbol("NASDAQ:QQQ", "QQQ symbol (leadership)", group = gOpt)
+
+// =============================================================================
+// HELPERS: TF / OR matrix, adaptive confirmation
+// =============================================================================
+chartSeconds = timeframe.in_seconds()
+chartMinutes = chartSeconds > 0 ? int(chartSeconds / 60) : 0
+isIntradaySupported = timeframe.isintraday and (chartMinutes == 1 or chartMinutes == 2 or chartMinutes == 3 or chartMinutes == 5 or chartMinutes == 10 or chartMinutes == 15 or chartMinutes == 30 or chartMinutes == 45 or chartMinutes == 60)
+unsupportedTf = not isIntradaySupported
+
+orPairValid = isIntradaySupported and chartMinutes > 0 and chartMinutes <= orMinutes and orMinutes % chartMinutes == 0
+orBars = orPairValid ? int(orMinutes / chartMinutes) : 0
+orDisabledMsg = unsupportedTf ? "Unsupported TF" : not orPairValid ? "OR=disabled (TF mismatch)" : "OR=ok"
+
+f_suggestOr() =>
+    chartMinutes == 30 and orMinutes == 15 ? "try OR30" : chartMinutes == 2 ? "try OR15/30" : chartMinutes == 3 ? "try OR15/30" : chartMinutes == 10 ? "try OR30" : chartMinutes == 45 or chartMinutes == 60 ? "VWAP/regime only" : "try OR5/15/30"
+
+f_adaptiveHold() =>
+    chartMinutes <= 1 ? 3 : chartMinutes <= 3 ? 2 : chartMinutes <= 10 ? 1 : chartMinutes == 15 ? (orBars == 1 ? 0 : 1) : chartMinutes == 30 ? 1 : 0
+
+f_adaptiveHysteresis() =>
+    chartMinutes <= 3 ? 3 : chartMinutes <= 15 ? 2 : 1
+
+f_adaptiveCooldown() =>
+    chartMinutes <= 1 ? 5 : chartMinutes <= 3 ? 4 : chartMinutes <= 10 ? 3 : chartMinutes == 15 ? 2 : 1
+
+f_defaultMinRegimeBars() =>
+    chartMinutes <= 1 ? 5 : chartMinutes == 2 ? 3 : chartMinutes == 3 ? 2 : 1
+
+f_defaultHtf() =>
+    chartMinutes <= 3 ? "5" : chartMinutes <= 10 ? "15" : chartMinutes <= 30 ? "60" : "240"
+
+// Impulse TF matrix: similar wall-clock intent across charts (quiet grind days)
+f_adaptiveImpulseBars() =>
+    chartMinutes <= 1 ? 4 : chartMinutes <= 3 ? 3 : chartMinutes <= 10 ? 3 : chartMinutes <= 15 ? 2 : 2
+
+f_adaptiveImpulseEarly() =>
+    chartMinutes <= 1 ? 2 : chartMinutes <= 10 ? 2 : 0
+
+f_adaptiveImpulseAtr() =>
+    chartMinutes <= 5 ? 0.40 : chartMinutes <= 15 ? 0.50 : 0.60
+
+f_adaptiveImpulseRearmCloses() =>
+    chartMinutes <= 1 ? 4 : chartMinutes <= 5 ? 3 : 2
+
+f_adaptiveImpulseRearmAtr() =>
+    chartMinutes <= 1 ? 1.0 : chartMinutes <= 5 ? 0.85 : 1.0
+
+// Min bars between Impulse marks (leg latch can re-arm; this hard-caps re-fire rate)
+f_adaptiveImpulseMinGap() =>
+    chartMinutes <= 1 ? 12 : chartMinutes <= 3 ? 8 : chartMinutes <= 5 ? 3 : 0
+
+f_adaptiveRiskRefFade() =>
+    chartMinutes <= 1 ? 15 : chartMinutes <= 5 ? 10 : 5
+
+holdBars = useAdaptiveHold ? f_adaptiveHold() : manualHoldBars
+hysteresisM = f_adaptiveHysteresis()
+cooldownBars = manualCooldownBars < 0 ? f_adaptiveCooldown() : manualCooldownBars
+minRegimeBars = f_defaultMinRegimeBars()
+htfTf = f_defaultHtf()
+htfEnabled = useHtfFilter and isIntradaySupported and timeframe.in_seconds(htfTf) > chartSeconds
+impulseBarsReq = impulseAdaptiveTf ? f_adaptiveImpulseBars() : impulseBarsReqIn
+impulseEarlyBars = impulseAdaptiveTf ? f_adaptiveImpulseEarly() : impulseEarlyBarsIn
+impulseAtrMult = impulseAdaptiveTf ? f_adaptiveImpulseAtr() : impulseAtrMultIn
+impulseEarlyBarsEff = impulseEarlyBars > 0 and impulseEarlyBars < impulseBarsReq ? impulseEarlyBars : 0
+// TF-safe entry: early when available, else full req (keeps 15m/30m alive)
+impulseEntryBars = impulseEarlyBarsEff > 0 ? impulseEarlyBarsEff : impulseBarsReq
+impulseRearmCloses = f_adaptiveImpulseRearmCloses()
+impulseRearmAtrMult = f_adaptiveImpulseRearmAtr()
+impulseMinGapBars = impulseAdaptiveTf ? f_adaptiveImpulseMinGap() : (chartMinutes <= 1 ? 12 : 0)
+riskRefFadeBars = f_adaptiveRiskRefFade()
+// Auto HTF on ≤3m timing charts; 5m+ decision charts stay soft unless Always
+impulseUseHtf = impulseHtfMode == "Always" or (impulseHtfMode == "Auto (≤3m)" and chartMinutes > 0 and chartMinutes <= 3)
+
+inSession = not na(time(timeframe.period, rthSession, sessionTz))
+sessionStart = inSession and not inSession[1]
+sessionEnd = not inSession and inSession[1]
+
+f_elapsedRthMinutes() =>
+    mins = hour(time, sessionTz) * 60 + minute(time, sessionTz)
+    openMins = 9 * 60 + 30
+    // bar close minute key for chart bar: open elapsed + chartMinutes
+    math.max(0, mins - openMins + chartMinutes)
+
+f_minuteKeyFromOpenTime(int t) =>
+    mins = hour(t, sessionTz) * 60 + minute(t, sessionTz)
+    openMins = 9 * 60 + 30
+    openElapsed = mins - openMins
+    // 1m bar open at 09:30 → key 1 at close
+    key = openElapsed + 1
+    key
+
+// =============================================================================
+// 2) REFERENCE LEVELS — session VWAP, OR, PDH/PDL/PDC, overnight
+// =============================================================================
+var float cumulativePv = 0.0
+var float cumulativeVolume = 0.0
+var float cumulativeP2v = 0.0
+var float sessionHigh = na
+var float sessionLow = na
+var float sessionOpen = na
+var float priorDayHigh = na
+var float priorDayLow = na
+var float priorDayClose = na
+var float prevSessionHigh = na
+var float prevSessionLow = na
+var float prevSessionClose = na
+var float lastRthClose = na
+var float gapPct = na
+var string gapBucket = "—"
+var int confirmedRthBars = 0
+var float overnightHigh = na
+var float overnightLow = na
+var bool overnightAvailable = false
+
+// Persist completed RTH H/L/C at session end (not at next open — avoids ETH close[1] corruption)
+if sessionEnd and barstate.isconfirmed and not na(sessionHigh) and not na(sessionLow) and not na(lastRthClose)
+    priorDayHigh := sessionHigh
+    priorDayLow := sessionLow
+    priorDayClose := lastRthClose
+    prevSessionHigh := sessionHigh
+    prevSessionLow := sessionLow
+    prevSessionClose := lastRthClose
+
+if sessionStart
+    cumulativePv := 0.0
+    cumulativeVolume := 0.0
+    cumulativeP2v := 0.0
+    sessionHigh := high
+    sessionLow := low
+    sessionOpen := open
+    lastRthClose := close
+    confirmedRthBars := 0
+    overnightHigh := na
+    overnightLow := na
+    overnightAvailable := false
+    if not na(priorDayClose) and priorDayClose != 0
+        gapPct := (open - priorDayClose) / priorDayClose * 100.0
+        absGap = math.abs(gapPct)
+        gapBucket := absGap < gapSmallPct ? "small" : absGap <= gapMedPct ? "medium" : "large"
+        gapBucket := gapBucket + (gapPct >= 0 ? " +" : " -")
+    else
+        gapPct := na
+        gapBucket := "—"
+
+if inSession
+    sessionHigh := math.max(nz(sessionHigh, high), high)
+    sessionLow := math.min(nz(sessionLow, low), low)
+    lastRthClose := close
+    cumulativePv += vwapSource * volume
+    cumulativeVolume += volume
+    cumulativeP2v += vwapSource * vwapSource * volume
+    if barstate.isconfirmed
+        confirmedRthBars += 1
+
+// Shared RTH session VWAP helper — same definition chart-side and inside request.security contexts
+f_rthSessionVwap() =>
+    var float hvPv = 0.0
+    var float hvVol = 0.0
+    inSess = not na(time(timeframe.period, rthSession, sessionTz))
+    if inSess and not inSess[1]
+        hvPv := 0.0
+        hvVol := 0.0
+    if inSess
+        hvPv += hlc3 * volume
+        hvVol += volume
+    hvVol > 0 ? hvPv / hvVol : na
+
+sessionVwap = cumulativeVolume > 0 ? cumulativePv / cumulativeVolume : na
+vwapVariance = cumulativeVolume > 0 ? math.max(0.0, cumulativeP2v / cumulativeVolume - sessionVwap * sessionVwap) : na
+vwapStdev = not na(vwapVariance) ? math.sqrt(vwapVariance) : na
+vwapUpper1 = not na(sessionVwap) and not na(vwapStdev) ? sessionVwap + vwapStdev * bandMultiplier : na
+vwapLower1 = not na(sessionVwap) and not na(vwapStdev) ? sessionVwap - vwapStdev * bandMultiplier : na
+vwapUpper2 = not na(sessionVwap) and not na(vwapStdev) ? sessionVwap + vwapStdev * bandMultiplier * 2.0 : na
+vwapLower2 = not na(sessionVwap) and not na(vwapStdev) ? sessionVwap - vwapStdev * bandMultiplier * 2.0 : na
+
+// Overnight via extended session (tuple call)
+extTicker = ticker.new(syminfo.prefix, syminfo.ticker, session.extended)
+[extHigh, extLow, extTime] = request.security(extTicker, timeframe.period, [high, low, time], barmerge.gaps_on, barmerge.lookahead_off)
+
+f_isPremarket(int t) =>
+    not na(t) and hour(t, sessionTz) * 60 + minute(t, sessionTz) >= 240 and hour(t, sessionTz) * 60 + minute(t, sessionTz) < 570
+
+if showOvernight and f_isPremarket(extTime) and not na(extHigh) and not na(extLow)
+    overnightHigh := na(overnightHigh) ? extHigh : math.max(overnightHigh, extHigh)
+    overnightLow := na(overnightLow) ? extLow : math.min(overnightLow, extLow)
+    overnightAvailable := true
+
+// Opening Range
+var float orHigh = na
+var float orLow = na
+var float orMid = na
+var bool orBuilding = false
+var bool orLocked = false
+var int sessionBar = na
+var int longHoldCount = 0
+var int shortHoldCount = 0
+
+if sessionStart
+    sessionBar := 1
+    orHigh := high
+    orLow := low
+    orMid := na
+    orBuilding := orPairValid
+    orLocked := false
+    longHoldCount := 0
+    shortHoldCount := 0
+else if inSession and barstate.isconfirmed and orBuilding
+    sessionBar := nz(sessionBar) + 1
+
+if inSession and orBuilding
+    orHigh := math.max(nz(orHigh, high), high)
+    orLow := math.min(nz(orLow, low), low)
+    if barstate.isconfirmed and nz(sessionBar) >= orBars
+        orMid := (orHigh + orLow) / 2.0
+        orBuilding := false
+        orLocked := true
+
+// Prior-close anchored VWAP (optional, hand-rolled)
+var float avwapPv = 0.0
+var float avwapVol = 0.0
+var float anchoredVwap = na
+var bool avwapAvailable = false
+var int avwapAnchorDay = na
+
+rthCloseEvent = sessionEnd and barstate.isconfirmed
+if showAnchoredVwap
+    if rthCloseEvent
+        avwapPv := 0.0
+        avwapVol := 0.0
+        avwapAnchorDay := dayofmonth(time, sessionTz)
+        avwapAvailable := true
+    canAccumulate = avwapAvailable and (includeEthInAnchoredVwap ? true : inSession)
+    if canAccumulate and not na(volume) and volume > 0
+        avwapPv += vwapSource * volume
+        avwapVol += volume
+    anchoredVwap := avwapVol > 0 ? avwapPv / avwapVol : na
+else
+    anchoredVwap := na
+    avwapAvailable := false
+
+// =============================================================================
+// 3) TOD RVOL — canonical 1m series + rolling ring buffer
+// =============================================================================
+var array<float> baselineSum = array.new_float(391, 0.0)
+var array<int> baselineCount = array.new_int(391, 0)
+var array<float> scratch = array.new_float(391, na)
+var matrix<float> sessionSlotValues = matrix.new<float>(391, todRvolLookback, na)
+var int nextSlotIndex = 0
+var float sessionCumVol1m = 0.0
+var bool scratchDirty = false
+var bool sessionMergeEligible = true
+var float avgFullDayVol = na
+var array<float> fullDayVolRing = array.new_float(0)
+var float todRvol = na
+var int currentMinuteKey = 0
+
+N = todRvolLookback
+nValid = N >= N_MIN and N <= 255
+
+f_resetScratch() =>
+    for i = 0 to 390
+        array.set(scratch, i, na)
+    true
+
+f_scratchComplete() =>
+    missing = 0
+    for m = 1 to 390
+        if na(array.get(scratch, m))
+            missing += 1
+    missing == 0
+
+// Merges scratch into ring buffer. Returns [ok, newAvgFullDayVol].
+// Caller must bump nextSlotIndex / assign avgFullDayVol (Pine forbids mutating those globals here).
+f_tryMergeBaseline() =>
+    slot = nextSlotIndex % N
+    ok = f_scratchComplete()
+    newAvg = avgFullDayVol
+    if ok
+        for m = 1 to 390
+            oldVal = matrix.get(sessionSlotValues, m, slot)
+            if not na(oldVal)
+                array.set(baselineSum, m, array.get(baselineSum, m) - oldVal)
+                array.set(baselineCount, m, array.get(baselineCount, m) - 1)
+            newVal = array.get(scratch, m)
+            matrix.set(sessionSlotValues, m, slot, newVal)
+            array.set(baselineSum, m, array.get(baselineSum, m) + newVal)
+            array.set(baselineCount, m, array.get(baselineCount, m) + 1)
+        dayVol = array.get(scratch, 390)
+        array.push(fullDayVolRing, dayVol)
+        if array.size(fullDayVolRing) > N
+            array.shift(fullDayVolRing)
+        sumV = 0.0
+        sz = array.size(fullDayVolRing)
+        if sz > 0
+            for i = 0 to sz - 1
+                sumV += array.get(fullDayVolRing, i)
+            newAvg := sumV / sz
+    [ok, newAvg]
+
+if sessionStart
+    sessionCumVol1m := 0.0
+    scratchDirty := false
+    sessionMergeEligible := true
+    f_resetScratch()
+
+// Process 1m volume into scratch.
+// Pine v6: one lower-TF call via UDT (volume+time together), only when chart TF > 1m.
+is1mChart = chartMinutes == 1
+ltfBars = chartMinutes > 1 ? request.security_lower_tf(syminfo.tickerid, "1", LtfBar.new(volume, time), ignore_invalid_timeframe = true) : array.new<LtfBar>()
+
+if inSession and barstate.isconfirmed and nValid
+    if is1mChart
+        rawKey = f_minuteKeyFromOpenTime(time)
+        if rawKey > 390
+            sessionMergeEligible := false
+        key = math.min(390, math.max(1, rawKey))
+        if rawKey >= 1
+            sessionCumVol1m += volume
+            array.set(scratch, key, sessionCumVol1m)
+            scratchDirty := true
+            currentMinuteKey := key
+    else
+        if not na(ltfBars) and array.size(ltfBars) > 0
+            n = array.size(ltfBars)
+            for i = 0 to n - 1
+                bar1 = array.get(ltfBars, i)
+                if not na(bar1)
+                    kRaw = f_minuteKeyFromOpenTime(bar1.t)
+                    if kRaw > 390
+                        sessionMergeEligible := false
+                    k = math.min(390, math.max(1, kRaw))
+                    if kRaw >= 1 and not na(bar1.vol)
+                        sessionCumVol1m += bar1.vol
+                        array.set(scratch, k, sessionCumVol1m)
+                        scratchDirty := true
+                        currentMinuteKey := k
+
+elapsedRthMinutes = f_elapsedRthMinutes()
+lookupKey = math.max(1, math.min(390, currentMinuteKey > 0 ? currentMinuteKey : elapsedRthMinutes))
+
+if inSession and nValid and lookupKey >= 1 and lookupKey <= 390
+    cnt = array.get(baselineCount, lookupKey)
+    sum = array.get(baselineSum, lookupKey)
+    cur = array.get(scratch, lookupKey)
+    if cnt >= N_MIN and sum > 0 and not na(cur)
+        todRvol := cur / (sum / cnt)
+    else
+        todRvol := na
+else
+    todRvol := na
+
+// Merge at session end if eligible
+if sessionEnd and scratchDirty and sessionMergeEligible and nValid
+    [mergedOk, mergedAvg] = f_tryMergeBaseline()
+    if mergedOk
+        nextSlotIndex += 1
+        avgFullDayVol := mergedAvg
+
+todRvolPass = not na(todRvol) and todRvol >= todRvolThreshold
+todRvolContPass = not na(todRvol) and todRvol >= continuationRvolThreshold
+todRvolWarming = na(todRvol)
+
+// =============================================================================
+// ADR (RTH-only, 20 completed full sessions)
+// =============================================================================
+var array<float> adrRing = array.new_float(0)
+var float adr20 = na
+var float adrPctUsed = na
+
+if sessionEnd and barstate.isconfirmed and not na(sessionHigh) and not na(sessionLow)
+    // Same full-session predicate as TOD RVOL merge (exclude short/gapped sessions)
+    if sessionMergeEligible and scratchDirty and f_scratchComplete()
+        rng = sessionHigh - sessionLow
+        array.push(adrRing, rng)
+        if array.size(adrRing) > 20
+            array.shift(adrRing)
+        if array.size(adrRing) >= 20
+            s = 0.0
+            for i = 0 to 19
+                s += array.get(adrRing, i)
+            adr20 := s / 20.0
+
+if inSession and not na(adr20) and adr20 > 0 and not na(sessionHigh) and not na(sessionLow)
+    adrPctUsed := (sessionHigh - sessionLow) / adr20 * 100.0
+else
+    adrPctUsed := na
+
+// =============================================================================
+// INDICATORS: ATR, ADX, RSI, BB, Keltner, structure
+// =============================================================================
+atr = ta.atr(atrLength)
+[diPlus, diMinus, adx] = ta.dmi(adxLength, adxLength)
+rsi = ta.rsi(close, rsiLength)
+[bbMid, bbUpper, bbLower] = ta.bb(close, 20, 2.0)
+bbWidth = not na(bbUpper) and not na(bbLower) and bbMid != 0 ? (bbUpper - bbLower) / bbMid : na
+bbWidthLow = ta.lowest(bbWidth, 120)
+compression = not na(bbWidth) and not na(bbWidthLow) and bbWidth <= bbWidthLow * 1.05
+
+keltnerBasis = ta.ema(close, keltnerLength)
+keltnerUpper = keltnerBasis + atr * keltnerMultiplier
+keltnerLower = keltnerBasis - atr * keltnerMultiplier
+bbInsideKc = not na(bbUpper) and not na(keltnerUpper) and bbUpper < keltnerUpper and bbLower > keltnerLower
+
+adxPctRank = ta.percentrank(adx, pctLookback)
+pctVolBull = usePercentileVol and not na(adxPctRank) and adxPctRank >= pctThresh
+pctVolBear = usePercentileVol and not na(adxPctRank) and adxPctRank >= pctThresh
+
+var float lastSwingHigh = na
+var float previousSwingHigh = na
+var float lastSwingLow = na
+var float previousSwingLow = na
+var float lastSwingHighRsi = na
+var float previousSwingHighRsi = na
+var float lastSwingLowRsi = na
+var float previousSwingLowRsi = na
+var int lastSwingHighBar = na
+var int previousSwingHighBar = na
+var int lastSwingLowBar = na
+var int previousSwingLowBar = na
+
+pivotHigh = ta.pivothigh(high, structureLength, structureLength)
+pivotLow = ta.pivotlow(low, structureLength, structureLength)
+
+if not na(pivotHigh)
+    previousSwingHigh := lastSwingHigh
+    previousSwingHighRsi := lastSwingHighRsi
+    previousSwingHighBar := lastSwingHighBar
+    lastSwingHigh := pivotHigh
+    lastSwingHighRsi := rsi[structureLength]
+    lastSwingHighBar := bar_index - structureLength
+
+if not na(pivotLow)
+    previousSwingLow := lastSwingLow
+    previousSwingLowRsi := lastSwingLowRsi
+    previousSwingLowBar := lastSwingLowBar
+    lastSwingLow := pivotLow
+    lastSwingLowRsi := rsi[structureLength]
+    lastSwingLowBar := bar_index - structureLength
+
+structureReady = not na(lastSwingHigh) and not na(previousSwingHigh) and not na(lastSwingLow) and not na(previousSwingLow)
+structureBull = structureReady and lastSwingHigh > previousSwingHigh and lastSwingLow > previousSwingLow
+structureBear = structureReady and lastSwingHigh < previousSwingHigh and lastSwingLow < previousSwingLow
+
+bullRsiDiv = useRsiDivergence and not na(lastSwingLow) and not na(previousSwingLow) and not na(lastSwingLowRsi) and not na(previousSwingLowRsi) and not na(lastSwingLowBar) and not na(previousSwingLowBar) and (lastSwingLowBar - previousSwingLowBar) <= rsiDivMaxSep and lastSwingLow < previousSwingLow and lastSwingLowRsi > previousSwingLowRsi
+bearRsiDiv = useRsiDivergence and not na(lastSwingHigh) and not na(previousSwingHigh) and not na(lastSwingHighRsi) and not na(previousSwingHighRsi) and not na(lastSwingHighBar) and not na(previousSwingHighBar) and (lastSwingHighBar - previousSwingHighBar) <= rsiDivMaxSep and lastSwingHigh > previousSwingHigh and lastSwingHighRsi < previousSwingHighRsi
+
+// HTF bias — confirmed prior-bar tuple + shared RTH session VWAP (not ta.vwap)
+f_htfBiasConfirmed() =>
+    sv = f_rthSessionVwap()
+    [p, m, a] = ta.dmi(adxLength, adxLength)
+    bull = not na(sv) and close > sv and p > m and a >= adxThreshold
+    bear = not na(sv) and close < sv and m > p and a >= adxThreshold
+    [bull[1], bear[1]]
+
+[htfBullRaw, htfBearRaw] = request.security(syminfo.tickerid, htfTf, f_htfBiasConfirmed(), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_on)
+htfBull = htfEnabled ? htfBullRaw : true
+htfBear = htfEnabled ? htfBearRaw : true
+htfStatus = not useHtfFilter ? "HTF=off" : not htfEnabled ? "HTF=disabled" : "HTF=" + htfTf
+
+// Optional internals — if/else (ternaries cannot return tuples in Pine)
+[tickClose, tickHigh, tickLow] = if useInternals
+    request.security(tickSymbol, timeframe.period, [close, high, low], barmerge.gaps_on, barmerge.lookahead_off, ignore_invalid_symbol = true)
+else
+    [na, na, na]
+
+[addClose, addHigh, addLow] = if useInternals
+    request.security(addSymbol, timeframe.period, [close, high, low], barmerge.gaps_on, barmerge.lookahead_off, ignore_invalid_symbol = true)
+else
+    [na, na, na]
+
+internalsAvailable = useInternals and not na(tickClose) and not na(addClose)
+
+var float sessionTickHigh = na
+var float sessionTickLow = na
+var float sessionAddHigh = na
+var float sessionAddLow = na
+if sessionStart
+    sessionTickHigh := na
+    sessionTickLow := na
+    sessionAddHigh := na
+    sessionAddLow := na
+if inSession and internalsAvailable
+    sessionTickHigh := na(sessionTickHigh) ? tickHigh : math.max(sessionTickHigh, tickHigh)
+    sessionTickLow := na(sessionTickLow) ? tickLow : math.min(sessionTickLow, tickLow)
+    sessionAddHigh := na(sessionAddHigh) ? addHigh : math.max(sessionAddHigh, addHigh)
+    sessionAddLow := na(sessionAddLow) ? addLow : math.min(sessionAddLow, addLow)
+
+newSessionHigh = inSession and high >= sessionHigh
+newSessionLow = inSession and low <= sessionLow
+tickDivHigh = internalsAvailable and newSessionHigh and not na(sessionTickHigh) and tickClose < sessionTickHigh * 0.9
+tickDivLow = internalsAvailable and newSessionLow and not na(sessionTickLow) and tickClose > sessionTickLow * 1.1
+internalsFlag = not useInternals ? "off" : not internalsAvailable ? "Internals=unavailable" : tickDivHigh or tickDivLow ? "Internals=DIV" : "Internals=ok"
+
+// Cross-symbol leadership — shared RTH VWAP helper; only when enabled
+f_aboveSessionVwapConfirmed() =>
+    sv = f_rthSessionVwap()
+    above = not na(sv) and close > sv
+    above[1]
+
+spyAboveVwap = useCrossLeadership ? request.security(spySymbol, timeframe.period, f_aboveSessionVwapConfirmed(), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true) : false
+qqqAboveVwap = useCrossLeadership ? request.security(qqqSymbol, timeframe.period, f_aboveSessionVwapConfirmed(), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true) : false
+selfIsSpy = str.upper(syminfo.ticker) == "SPY"
+selfIsQqq = str.upper(syminfo.ticker) == "QQQ"
+selfAboveVwap = not na(sessionVwap) and close > sessionVwap
+peerAbove = selfIsSpy ? qqqAboveVwap : selfIsQqq ? spyAboveVwap : false
+leadershipFlag = not useCrossLeadership ? "off" : not selfIsSpy and not selfIsQqq ? "n/a" : selfAboveVwap == peerAbove ? "Lead=aligned" : "Lead=diverge"
+
+// =============================================================================
+// 4) REGIME SCORECARD + HYSTERESIS
+// =============================================================================
+regimeEligible = inSession and confirmedRthBars >= minRegimeBars and elapsedRthMinutes >= minRegimeMinutes
+
+vwapRising = not na(sessionVwap) and not na(sessionVwap[slopeBars]) and sessionVwap > sessionVwap[slopeBars]
+vwapFalling = not na(sessionVwap) and not na(sessionVwap[slopeBars]) and sessionVwap < sessionVwap[slopeBars]
+barRange = high - low
+// CW10002: ta.* series must run every bar — compute outside the conditional
+recentHigh3 = ta.highest(high, 3)
+recentLow3 = ta.lowest(low, 3)
+rangeExpand = atr > 0 and (barRange >= rangeConfirmAtr * atr or recentHigh3 - recentLow3 >= rangeConfirmAtr * atr)
+
+bull1 = not na(sessionVwap) and close > sessionVwap
+bear1 = not na(sessionVwap) and close < sessionVwap
+bull2 = vwapRising
+bear2 = vwapFalling
+bull3 = adx >= adxThreshold and diPlus > diMinus
+bear3 = adx >= adxThreshold and diMinus > diPlus
+bull4 = rangeExpand
+bear4 = rangeExpand
+bull5 = todRvolPass
+bear5 = todRvolPass
+
+bullScore = (bull1 ? 1 : 0) + (bull2 ? 1 : 0) + (bull3 ? 1 : 0) + (bull4 ? 1 : 0) + (bull5 ? 1 : 0) + (pctVolBull ? 1 : 0)
+bearScore = (bear1 ? 1 : 0) + (bear2 ? 1 : 0) + (bear3 ? 1 : 0) + (bear4 ? 1 : 0) + (bear5 ? 1 : 0) + (pctVolBear ? 1 : 0)
+// Quiet SPY grind days often fail RVOL+range together; require 3 structural dims (was 4) so clear VWAP trends classify
+needScore = usePercentileVol ? 4 : 3
+
+rawRegime = not regimeEligible ? "warming" : bullScore >= needScore ? "Trend Up" : bearScore >= needScore ? "Trend Down" : bullScore <= 2 and bearScore <= 2 or (adx < adxThreshold and not na(sessionVwap) and math.abs(close - sessionVwap) < nz(vwapStdev, atr)) ? "Balanced" : "Transition"
+
+var string regime = "warming"
+var int regimeAgreeCount = 0
+var string pendingRegime = "warming"
+
+if sessionStart
+    regime := "warming"
+    regimeAgreeCount := 0
+    pendingRegime := "warming"
+
+if barstate.isconfirmed and inSession
+    if rawRegime == "warming"
+        regime := "warming"
+        regimeAgreeCount := 0
+        pendingRegime := "warming"
+    else if rawRegime == pendingRegime
+        regimeAgreeCount += 1
+        if regimeAgreeCount >= hysteresisM or rawRegime == "Transition"
+            regime := rawRegime
+    else
+        pendingRegime := rawRegime
+        regimeAgreeCount := 1
+        if rawRegime == "Transition"
+            regime := "Transition"
+
+transitionSub = regime == "Transition" ? (compression or bbInsideKc ? "Compression" : "Chop") : ""
+regimeLabel = regime == "Transition" ? "Transition: " + transitionSub : regime
+regimeIsTrendUp = regime == "Trend Up"
+regimeIsTrendDown = regime == "Trend Down"
+regimeIsBalanced = regime == "Balanced"
+regimeIsTransition = regime == "Transition" or regime == "warming"
+
+// Band fade
+minutesFromOpen = elapsedRthMinutes
+cumVolPct = not na(avgFullDayVol) and avgFullDayVol > 0 ? cumulativeVolume / avgFullDayVol * 100.0 : 0.0
+bandFadeOk = minutesFromOpen >= bandFadeMinutes or cumVolPct >= bandFadeVolPct
+
+// =============================================================================
+// 5) SIGNAL FAMILIES
+// =============================================================================
+requiredCloses = math.max(0, holdBars)
+rawLongTrigger = orLocked and orPairValid and close > orHigh
+rawShortTrigger = orLocked and orPairValid and close < orLow
+longHoldCount := rawLongTrigger ? longHoldCount + 1 : 0
+shortHoldCount := rawShortTrigger ? shortHoldCount + 1 : 0
+
+// hold: when requiredCloses==0, first close beyond OR qualifies
+longCandidate = orLocked and orPairValid and rawLongTrigger and (requiredCloses == 0 ? longHoldCount >= 1 : longHoldCount == requiredCloses)
+shortCandidate = orLocked and orPairValid and rawShortTrigger and (requiredCloses == 0 ? shortHoldCount >= 1 : shortHoldCount == requiredCloses)
+
+vwapDistance = not na(sessionVwap) and atr > 0 ? math.abs(close - sessionVwap) / atr : na
+
+structurePassLong = not useStructureFilter or not structureReady or structureBull
+structurePassShort = not useStructureFilter or not structureReady or structureBear
+htfPassLong = not useHtfFilter or htfBull
+htfPassShort = not useHtfFilter or htfBear
+vwapDistPass = not useVwapDistanceFilter or (not na(vwapDistance) and vwapDistance <= maxVwapDistanceAtr)
+
+// Cooldown / one-per-level guards
+var int lastAlertBar = -999
+var bool usedOrHighLong = false
+var bool usedOrLowShort = false
+var bool usedOrFailLong = false
+var bool usedOrFailShort = false
+var bool usedVwapPullLong = false
+var bool usedVwapPullShort = false
+var bool usedVwapBandLong = false
+var bool usedVwapBandShort = false
+var string lastReject = "—"
+var string activeSetup = "—"
+
+if sessionStart
+    lastAlertBar := -999
+    usedOrHighLong := false
+    usedOrLowShort := false
+    usedOrFailLong := false
+    usedOrFailShort := false
+    usedVwapPullLong := false
+    usedVwapPullShort := false
+    usedVwapBandLong := false
+    usedVwapBandShort := false
+    lastReject := "—"
+    activeSetup := "—"
+
+cooldownOk = bar_index - lastAlertBar >= cooldownBars
+volumeGateOk = not todRvolWarming and todRvolPass
+continuationVolumeOk = not todRvolWarming and todRvolContPass
+
+f_rsiLongOk() =>
+    lo = adx < adxThreshold ? 35.0 : 30.0
+    extreme = rsi <= lo
+    extreme or bullRsiDiv
+
+f_rsiShortOk() =>
+    hi = adx < adxThreshold ? 65.0 : 70.0
+    extreme = rsi >= hi
+    extreme or bearRsiDiv
+
+// --- OR continuation (Trend aligned, OR valid) — elevated RVOL
+orContLongRaw = longCandidate and regimeIsTrendUp and continuationVolumeOk and (holdBars > 0 or rangeExpand) and htfPassLong and structurePassLong and vwapDistPass
+orContShortRaw = shortCandidate and regimeIsTrendDown and continuationVolumeOk and (holdBars > 0 or rangeExpand) and htfPassShort and structurePassShort and vwapDistPass
+orContLongAlert = barstate.isconfirmed and inSession and not unsupportedTf and orPairValid and orContLongRaw and cooldownOk and not usedOrHighLong and not regimeIsTransition
+orContShortAlert = barstate.isconfirmed and inSession and not unsupportedTf and orPairValid and orContShortRaw and cooldownOk and not usedOrLowShort and not regimeIsTransition
+
+if longCandidate and not orContLongAlert and barstate.isconfirmed
+    lastReject := regimeIsTransition ? "Transition silence" : not regimeIsTrendUp ? "regime≠TrendUp" : todRvolWarming ? "RVOL warming" : not todRvolContPass ? "RVOL cont" : not htfPassLong ? "HTF" : "filtered"
+if shortCandidate and not orContShortAlert and barstate.isconfirmed
+    lastReject := regimeIsTransition ? "Transition silence" : not regimeIsTrendDown ? "regime≠TrendDown" : todRvolWarming ? "RVOL warming" : not todRvolContPass ? "RVOL cont" : not htfPassShort ? "HTF" : "filtered"
+
+// --- Failed OR arming on RAW candidates; alert only in Balanced
+var int trackedDirection = 0
+var float trackedLevel = na
+var int failureAge = na
+var bool failedSignalUsed = false
+
+if longCandidate
+    trackedDirection := 1
+    trackedLevel := orHigh
+    failureAge := 0
+    failedSignalUsed := false
+else if shortCandidate
+    trackedDirection := -1
+    trackedLevel := orLow
+    failureAge := 0
+    failedSignalUsed := false
+else if not na(failureAge)
+    failureAge += 1
+
+failedBreakDown = useFailedReversals and orPairValid and trackedDirection == -1 and not failedSignalUsed and failureAge > 0 and failureAge <= failureWindowBars and close > trackedLevel + atr * failureDistanceAtr
+failedBreakUp = useFailedReversals and orPairValid and trackedDirection == 1 and not failedSignalUsed and failureAge > 0 and failureAge <= failureWindowBars and close < trackedLevel - atr * failureDistanceAtr
+
+failedOrLongAlert = barstate.isconfirmed and inSession and regimeIsBalanced and failedBreakDown and volumeGateOk and cooldownOk and not usedOrFailLong
+failedOrShortAlert = barstate.isconfirmed and inSession and regimeIsBalanced and failedBreakUp and volumeGateOk and cooldownOk and not usedOrFailShort
+
+if failedBreakDown or failedBreakUp
+    failedSignalUsed := true
+if not na(failureAge) and failureAge > failureWindowBars
+    trackedDirection := 0
+    trackedLevel := na
+    failureAge := na
+
+// --- VWAP pullback continuation (Trend)
+var bool pulledIntoVwapLong = false
+var bool pulledIntoVwapShort = false
+if sessionStart
+    pulledIntoVwapLong := false
+    pulledIntoVwapShort := false
+if inSession and regimeIsTrendUp and not na(sessionVwap) and low <= math.max(sessionVwap, nz(vwapLower1, sessionVwap))
+    pulledIntoVwapLong := true
+if inSession and regimeIsTrendDown and not na(sessionVwap) and high >= math.min(sessionVwap, nz(vwapUpper1, sessionVwap))
+    pulledIntoVwapShort := true
+
+vwapPullLongRaw = useVwapPullback and regimeIsTrendUp and pulledIntoVwapLong and close > sessionVwap and continuationVolumeOk and htfPassLong
+vwapPullShortRaw = useVwapPullback and regimeIsTrendDown and pulledIntoVwapShort and close < sessionVwap and continuationVolumeOk and htfPassShort
+vwapPullLongAlert = barstate.isconfirmed and inSession and not unsupportedTf and vwapPullLongRaw and cooldownOk and not usedVwapPullLong and not regimeIsTransition
+vwapPullShortAlert = barstate.isconfirmed and inSession and not unsupportedTf and vwapPullShortRaw and cooldownOk and not usedVwapPullShort and not regimeIsTransition
+
+if vwapPullLongAlert
+    pulledIntoVwapLong := false
+if vwapPullShortAlert
+    pulledIntoVwapShort := false
+
+// --- VWAP band mean reversion (Balanced) + RSI
+rawBandLong = useVwapMeanRev and inSession and bandFadeOk and not na(vwapLower1) and low <= vwapLower1 and close > vwapLower1
+rawBandShort = useVwapMeanRev and inSession and bandFadeOk and not na(vwapUpper1) and high >= vwapUpper1 and close < vwapUpper1
+rsiLongOk = not useRsiFilter or f_rsiLongOk()
+rsiShortOk = not useRsiFilter or f_rsiShortOk()
+vwapBandLongAlert = barstate.isconfirmed and regimeIsBalanced and rawBandLong and rsiLongOk and volumeGateOk and cooldownOk and not usedVwapBandLong
+vwapBandShortAlert = barstate.isconfirmed and regimeIsBalanced and rawBandShort and rsiShortOk and volumeGateOk and cooldownOk and not usedVwapBandShort
+
+// --- Impulse Run: one entry-quality marker per directional leg (soft RVOL; Transition OK)
+// Strict bar: large range + optional close extreme. Grind bar: directional close (small OK).
+impulseStrictBull = close > open and atr > 0 and barRange >= impulseAtrMult * atr and (not impulseCloseExtreme or barRange == 0 or close >= high - 0.30 * barRange)
+impulseStrictBear = close < open and atr > 0 and barRange >= impulseAtrMult * atr and (not impulseCloseExtreme or barRange == 0 or close <= low + 0.30 * barRange)
+impulseGrindBull = close > close[1] or (close > open and close >= close[1])
+impulseGrindBear = close < close[1] or (close < open and close <= close[1])
+// Strong opposite bar breaks the run even in grind mode
+impulseOppBear = close < open and atr > 0 and barRange >= impulseAtrMult * atr
+impulseOppBull = close > open and atr > 0 and barRange >= impulseAtrMult * atr
+impulseBullBar = impulseUseGrind ? (impulseGrindBull and not impulseOppBear) : impulseStrictBull
+impulseBearBar = impulseUseGrind ? (impulseGrindBear and not impulseOppBull) : impulseStrictBear
+
+var int impulseBullRun = 0
+var int impulseBearRun = 0
+var bool impulseLegLongLatched = false
+var bool impulseLegShortLatched = false
+var float impulseLegLongExtreme = na
+var float impulseLegShortExtreme = na
+var int impulseOppBearStreak = 0
+var int impulseOppBullStreak = 0
+var int lastImpulseBar = -999
+
+if sessionStart
+    impulseBullRun := 0
+    impulseBearRun := 0
+    impulseLegLongLatched := false
+    impulseLegShortLatched := false
+    impulseLegLongExtreme := na
+    impulseLegShortExtreme := na
+    impulseOppBearStreak := 0
+    impulseOppBullStreak := 0
+    lastImpulseBar := -999
+
+if barstate.isconfirmed and inSession
+    impulseBullRun := impulseBullBar ? impulseBullRun + 1 : 0
+    impulseBearRun := impulseBearBar ? impulseBearRun + 1 : 0
+    impulseOppBearStreak := impulseBearBar ? impulseOppBearStreak + 1 : 0
+    impulseOppBullStreak := impulseBullBar ? impulseOppBullStreak + 1 : 0
+    // Track leg extremes while latched (for ATR re-arm)
+    if impulseLegLongLatched
+        impulseLegLongExtreme := na(impulseLegLongExtreme) ? high : math.max(impulseLegLongExtreme, high)
+    if impulseLegShortLatched
+        impulseLegShortExtreme := na(impulseLegShortExtreme) ? low : math.min(impulseLegShortExtreme, low)
+else if not inSession
+    impulseBullRun := 0
+    impulseBearRun := 0
+    impulseOppBearStreak := 0
+    impulseOppBullStreak := 0
+
+impulseVolOk = not impulseSoftRvol or not todRvolWarming
+impulseRegimeOk = (impulseAllowTransition or not regimeIsTransition) and (not impulseTrendOnly or regimeIsTrendUp or regimeIsTrendDown)
+impulseVwapLongOk = not impulseUseVwapSide or (not na(sessionVwap) and close > sessionVwap)
+impulseVwapShortOk = not impulseUseVwapSide or (not na(sessionVwap) and close < sessionVwap)
+
+// Re-arm: clear latch when any of VWAP cross / K opposing bars / R×ATR retracement
+vwapCrossBelow = impulseUseVwapSide and not na(sessionVwap) and close < sessionVwap and close[1] >= sessionVwap[1]
+vwapCrossAbove = impulseUseVwapSide and not na(sessionVwap) and close > sessionVwap and close[1] <= sessionVwap[1]
+longRetrace = atr > 0 and not na(impulseLegLongExtreme) and impulseLegLongExtreme - close >= impulseRearmAtrMult * atr
+shortRally = atr > 0 and not na(impulseLegShortExtreme) and close - impulseLegShortExtreme >= impulseRearmAtrMult * atr
+
+if barstate.isconfirmed and inSession
+    if impulseLegLongLatched and (vwapCrossBelow or impulseOppBearStreak >= impulseRearmCloses or longRetrace)
+        impulseLegLongLatched := false
+        impulseLegLongExtreme := na
+        impulseOppBearStreak := 0
+        if activeSetup == "Impulse Long"
+            activeSetup := "—"
+    if impulseLegShortLatched and (vwapCrossAbove or impulseOppBullStreak >= impulseRearmCloses or shortRally)
+        impulseLegShortLatched := false
+        impulseLegShortExtreme := na
+        impulseOppBullStreak := 0
+        if activeSetup == "Impulse Short"
+            activeSetup := "—"
+
+// Latch is primary anti-spam; TF gap hard-caps re-fire after re-arm (esp. 1m)
+// HTF: Auto ≤3m / Always / Off — uses same HTF series as OR/VP; independent of useHtfFilter
+// Mean-reversion (failed-OR / band MR) intentionally stay ungated by HTF
+impulseHtfAvail = isIntradaySupported and timeframe.in_seconds(htfTf) > chartSeconds
+impulseHtfLongOk = not impulseUseHtf or not impulseHtfAvail or htfBullRaw
+impulseHtfShortOk = not impulseUseHtf or not impulseHtfAvail or htfBearRaw
+impulseGapOk = impulseMinGapBars <= 0 or bar_index - lastImpulseBar >= impulseMinGapBars
+impulseGate = useImpulseRun and barstate.isconfirmed and inSession and not unsupportedTf and impulseVolOk and impulseRegimeOk and impulseGapOk
+impulseLongAlert = impulseGate and impulseBullRun == impulseEntryBars and impulseVwapLongOk and impulseHtfLongOk and not impulseLegLongLatched
+impulseShortAlert = impulseGate and impulseBearRun == impulseEntryBars and impulseVwapShortOk and impulseHtfShortOk and not impulseLegShortLatched
+
+impulseBuilding = useImpulseRun and inSession and (impulseBullRun > 0 or impulseBearRun > 0) and not impulseLongAlert and not impulseShortAlert
+impulseBuildTxt = impulseBullRun > 0 ? "IMP↑ " + str.tostring(impulseBullRun) + "/" + str.tostring(impulseBarsReq) : impulseBearRun > 0 ? "IMP↓ " + str.tostring(impulseBearRun) + "/" + str.tostring(impulseBarsReq) : impulseLegLongLatched or impulseLegShortLatched ? "latched" : "—"
+impulseHudTxt = impulseLongAlert ? "Impulse Long" : impulseShortAlert ? "Impulse Short" : impulseBuilding ? impulseBuildTxt : impulseLegLongLatched or impulseLegShortLatched ? "latched" : "—"
+
+// Mark used levels / cooldown
+if orContLongAlert
+    usedOrHighLong := true
+    lastAlertBar := bar_index
+    activeSetup := "OR Cont Long"
+if orContShortAlert
+    usedOrLowShort := true
+    lastAlertBar := bar_index
+    activeSetup := "OR Cont Short"
+if failedOrLongAlert
+    usedOrFailLong := true
+    lastAlertBar := bar_index
+    activeSetup := "Failed OR Long"
+if failedOrShortAlert
+    usedOrFailShort := true
+    lastAlertBar := bar_index
+    activeSetup := "Failed OR Short"
+if vwapPullLongAlert
+    usedVwapPullLong := true
+    lastAlertBar := bar_index
+    activeSetup := "VWAP Pull Long"
+if vwapPullShortAlert
+    usedVwapPullShort := true
+    lastAlertBar := bar_index
+    activeSetup := "VWAP Pull Short"
+if vwapBandLongAlert
+    usedVwapBandLong := true
+    lastAlertBar := bar_index
+    activeSetup := "VWAP Band Long"
+if vwapBandShortAlert
+    usedVwapBandShort := true
+    lastAlertBar := bar_index
+    activeSetup := "VWAP Band Short"
+if impulseLongAlert
+    impulseLegLongLatched := true
+    impulseLegLongExtreme := high
+    impulseLegShortLatched := false
+    impulseLegShortExtreme := na
+    impulseOppBearStreak := 0
+    lastImpulseBar := bar_index
+    lastAlertBar := bar_index
+    activeSetup := "Impulse Long"
+if impulseShortAlert
+    impulseLegShortLatched := true
+    impulseLegShortExtreme := low
+    impulseLegLongLatched := false
+    impulseLegLongExtreme := na
+    impulseOppBullStreak := 0
+    lastImpulseBar := bar_index
+    lastAlertBar := bar_index
+    activeSetup := "Impulse Short"
+
+anyAlert = orContLongAlert or orContShortAlert or failedOrLongAlert or failedOrShortAlert or vwapPullLongAlert or vwapPullShortAlert or vwapBandLongAlert or vwapBandShortAlert or impulseLongAlert or impulseShortAlert
+
+// =============================================================================
+// 7) INVALIDATION + TARGET REFERENCES
+// =============================================================================
+var float refEntry = na
+var float refInvalid = na
+var float refTarget1 = na
+var float refTarget2 = na
+var string refTargetNote = "—"
+var int refDir = 0
+
+if sessionStart
+    refEntry := na
+    refInvalid := na
+    refTarget1 := na
+    refTarget2 := na
+    refTargetNote := "—"
+    refDir := 0
+
+f_dirTarget(float entry, float candidate, int dir, float atrFallback) =>
+    ok = not na(candidate) and ((dir > 0 and candidate > entry) or (dir < 0 and candidate < entry))
+    ok ? candidate : (dir > 0 ? entry + atrFallback * atr : entry - atrFallback * atr)
+
+// Returns [dir, entry, invalid, target1, target2, note] — assign globals at call site (CE10088)
+f_calcRisk(int dir, float entry, float inv, float t1, float t2, string note) =>
+    buf = invBufferAtr * atr
+    invOut = dir > 0 ? inv - buf : inv + buf
+    stopDist = math.abs(entry - invOut)
+    if atr > 0 and stopDist > maxStopAtrMultiple * atr
+        [dir, entry, invOut, float(na), float(na), "Stop too wide — reference only"]
+    else
+        t1g = f_dirTarget(entry, t1, dir, fallbackAtrMult)
+        usedFallback = na(t1) or (dir > 0 ? t1 <= entry : t1 >= entry)
+        t2g = f_dirTarget(entry, t2, dir, 2.0)
+        noteOut = usedFallback ? "Target=ATR-fallback" : note
+        [dir, entry, invOut, t1g, t2g, noteOut]
+
+if orContLongAlert
+    orRange = orHigh - orLow
+    inv = not na(orMid) ? orMid : not na(orLow) ? orLow : close - stopAtrMult * atr
+    [d, e, i, t1o, t2o, n] = f_calcRisk(1, close, inv, close + 1.0 * orRange, close + 2.0 * atr, "OR MM")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if orContShortAlert
+    orRange = orHigh - orLow
+    inv = not na(orMid) ? orMid : not na(orHigh) ? orHigh : close + stopAtrMult * atr
+    [d, e, i, t1o, t2o, n] = f_calcRisk(-1, close, inv, close - 1.0 * orRange, close - 2.0 * atr, "OR MM")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if vwapPullLongAlert
+    inv = not na(vwapLower1) ? vwapLower1 : sessionVwap
+    t1 = math.max(nz(orHigh, close + atr), close + 1.0 * atr)
+    [d, e, i, t1o, t2o, n] = f_calcRisk(1, close, inv, t1, close + 2.0 * atr, "VWAP pull")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if vwapPullShortAlert
+    inv = not na(vwapUpper1) ? vwapUpper1 : sessionVwap
+    t1 = math.min(nz(orLow, close - atr), close - 1.0 * atr)
+    [d, e, i, t1o, t2o, n] = f_calcRisk(-1, close, inv, t1, close - 2.0 * atr, "VWAP pull")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if failedOrLongAlert or vwapBandLongAlert
+    failLvl = failedOrLongAlert ? trackedLevel : vwapLower1
+    inv = failLvl - failureDistanceAtr * atr
+    t1 = math.max(nz(sessionVwap, close + 0.5 * atr), close + 0.5 * atr)
+    t2cand = not na(vwapUpper1) ? vwapUpper1 : orMid
+    t2 = not na(t2cand) and not na(orMid) ? math.max(t2cand, orMid) : t2cand
+    [d, e, i, t1o, t2o, n] = f_calcRisk(1, close, inv, t1, t2, "MR")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if failedOrShortAlert or vwapBandShortAlert
+    failLvl = failedOrShortAlert ? trackedLevel : vwapUpper1
+    inv = failLvl + failureDistanceAtr * atr
+    t1 = math.min(nz(sessionVwap, close - 0.5 * atr), close - 0.5 * atr)
+    t2cand = not na(vwapLower1) ? vwapLower1 : orMid
+    t2 = not na(t2cand) and not na(orMid) ? math.min(t2cand, orMid) : t2cand
+    [d, e, i, t1o, t2o, n] = f_calcRisk(-1, close, inv, t1, t2, "MR")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if impulseLongAlert
+    inv = math.min(nz(sessionVwap, close - stopAtrMult * atr), close - stopAtrMult * atr)
+    [d, e, i, t1o, t2o, n] = f_calcRisk(1, close, inv, close + 1.0 * atr, close + 2.0 * atr, "Impulse")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+if impulseShortAlert
+    inv = math.max(nz(sessionVwap, close + stopAtrMult * atr), close + stopAtrMult * atr)
+    [d, e, i, t1o, t2o, n] = f_calcRisk(-1, close, inv, close - 1.0 * atr, close - 2.0 * atr, "Impulse")
+    refDir := d
+    refEntry := e
+    refInvalid := i
+    refTarget1 := t1o
+    refTarget2 := t2o
+    refTargetNote := n
+
+// =============================================================================
+// 8) PLOTS, TABLE, ALERTS
+// =============================================================================
+plot(showVWAP and not unsupportedTf ? sessionVwap : na, "Session VWAP", color.orange, 2)
+plot(showVWAPBands and not unsupportedTf ? vwapUpper1 : na, "VWAP Upper 1", color.new(color.orange, 65), 1)
+plot(showVWAPBands and not unsupportedTf ? vwapLower1 : na, "VWAP Lower 1", color.new(color.orange, 65), 1)
+plot(showVWAPBands and not unsupportedTf ? vwapUpper2 : na, "VWAP Upper 2", color.new(color.orange, 85), 1, plot.style_circles)
+plot(showVWAPBands and not unsupportedTf ? vwapLower2 : na, "VWAP Lower 2", color.new(color.orange, 85), 1, plot.style_circles)
+
+plot(showOR and orPairValid ? orHigh : na, "OR High", color.blue, 1)
+plot(showOR and orPairValid ? orLow : na, "OR Low", color.blue, 1)
+plot(showOR and orPairValid ? orMid : na, "OR Mid", color.new(color.blue, 60), 1, plot.style_circles)
+bgcolor(showOR and orBuilding ? color.new(color.blue, 88) : na, title = "OR Building")
+
+plot(priorDayHigh, "PDH", color.new(color.purple, 50), 1, plot.style_linebr)
+plot(priorDayLow, "PDL", color.new(color.purple, 50), 1, plot.style_linebr)
+plot(showOvernight and overnightAvailable ? overnightHigh : na, "ONH", color.new(color.teal, 40), 1, plot.style_linebr)
+plot(showOvernight and overnightAvailable ? overnightLow : na, "ONL", color.new(color.teal, 40), 1, plot.style_linebr)
+plot(showAnchoredVwap and avwapAvailable ? anchoredVwap : na, "Prior-Close AVWAP", color.new(color.yellow, 30), 1)
+
+plot(showKeltner ? keltnerUpper : na, "Keltner Upper", color.new(color.gray, 70), 1)
+plot(showKeltner ? keltnerLower : na, "Keltner Lower", color.new(color.gray, 70), 1)
+
+plot(showRiskRefs and not na(refInvalid) and lastAlertBar > -999 and bar_index - lastAlertBar <= riskRefFadeBars ? refInvalid : na, "Invalidation Ref", color.red, 1, plot.style_linebr)
+plot(showRiskRefs and not na(refTarget1) and lastAlertBar > -999 and bar_index - lastAlertBar <= riskRefFadeBars ? refTarget1 : na, "Target1 Ref", color.lime, 1, plot.style_linebr)
+plot(showRiskRefs and not na(refTarget2) and lastAlertBar > -999 and bar_index - lastAlertBar <= riskRefFadeBars ? refTarget2 : na, "Target2 Ref", color.new(color.lime, 50), 1, plot.style_circles)
+
+plotshape(showRejected and longCandidate and not orContLongAlert, title = "Rejected Long", style = shape.circle, location = location.belowbar, color = color.new(color.gray, 50), size = size.tiny)
+plotshape(showRejected and shortCandidate and not orContShortAlert, title = "Rejected Short", style = shape.circle, location = location.abovebar, color = color.new(color.gray, 50), size = size.tiny)
+plotshape(orContLongAlert, title = "OR Cont Long", style = shape.triangleup, location = location.belowbar, color = color.lime, size = size.small, text = "OR+")
+plotshape(orContShortAlert, title = "OR Cont Short", style = shape.triangledown, location = location.abovebar, color = color.red, size = size.small, text = "OR-")
+plotshape(failedOrLongAlert, title = "Failed OR Long", style = shape.xcross, location = location.belowbar, color = color.aqua, size = size.small, text = "FR+")
+plotshape(failedOrShortAlert, title = "Failed OR Short", style = shape.xcross, location = location.abovebar, color = color.fuchsia, size = size.small, text = "FR-")
+plotshape(vwapPullLongAlert, title = "VWAP Pull Long", style = shape.triangleup, location = location.belowbar, color = color.green, size = size.tiny, text = "VP+")
+plotshape(vwapPullShortAlert, title = "VWAP Pull Short", style = shape.triangledown, location = location.abovebar, color = color.maroon, size = size.tiny, text = "VP-")
+plotshape(vwapBandLongAlert, title = "VWAP Band Long", style = shape.diamond, location = location.belowbar, color = color.aqua, size = size.tiny)
+plotshape(vwapBandShortAlert, title = "VWAP Band Short", style = shape.diamond, location = location.abovebar, color = color.fuchsia, size = size.tiny)
+plotshape(impulseLongAlert and impulseShowLabels, title = "Impulse Long", style = shape.triangleup, location = location.belowbar, color = color.new(color.teal, 0), size = size.small, text = "IMP+")
+plotshape(impulseLongAlert and not impulseShowLabels, title = "Impulse Long (no label)", style = shape.triangleup, location = location.belowbar, color = color.new(color.teal, 0), size = size.small)
+plotshape(impulseShortAlert and impulseShowLabels, title = "Impulse Short", style = shape.triangledown, location = location.abovebar, color = color.new(color.orange, 0), size = size.small, text = "IMP-")
+plotshape(impulseShortAlert and not impulseShowLabels, title = "Impulse Short (no label)", style = shape.triangledown, location = location.abovebar, color = color.new(color.orange, 0), size = size.small)
+barcolor(showRvolBars and todRvolContPass ? color.new(color.yellow, 75) : showRvolBars and todRvolPass ? color.new(color.yellow, 90) : na, title = "High TOD RVol")
+
+// Status table — compact by default; top-right placement (row count matches mode — no empty rows)
+tablePos = tablePosInput == "Top Right" ? position.top_right : tablePosInput == "Bottom Right" ? position.bottom_right : tablePosInput == "Top Left" ? position.top_left : position.bottom_left
+statusRows = tableCompact ? 5 : 16
+var table status = table.new(tablePos, 2, statusRows, bgcolor = color.new(#0b1220, 55), border_width = 0, frame_color = color.new(color.gray, 70), frame_width = 1)
+
+// Impulse can still fire when OR/MR are RVOL-floor blocked (soft gate = warming only)
+signalWhy = todRvolWarming ? "blocked: RVOL warming" : impulseHudTxt != "—" ? impulseHudTxt : activeSetup != "—" ? activeSetup : regimeIsTransition and not impulseAllowTransition ? "silent: Transition" : not volumeGateOk ? "OR/MR RVOL-blocked; impulse soft-OK" : not continuationVolumeOk and (regimeIsTrendUp or regimeIsTrendDown) ? "cont needs RVOL≥" + str.tostring(continuationRvolThreshold, "#.##") : lastReject != "—" ? "no fire / " + lastReject : "watching"
+
+if showTable and barstate.islast
+    rvolTxt = todRvolWarming ? "warming" : str.tostring(todRvol, "#.##") + " / " + str.tostring(todRvolThreshold, "#.#") + "|" + str.tostring(continuationRvolThreshold, "#.##")
+    rvolColor = todRvolWarming ? color.yellow : todRvolContPass ? color.lime : todRvolPass ? color.aqua : color.orange
+    orHint = f_suggestOr()
+    orTxt = unsupportedTf ? "Unsupported TF" : orPairValid ? (orLocked ? "locked" : orBuilding ? "building" : "idle") : tableCompact ? "off·" + orHint : "disabled · " + orHint
+    onhTxt = showOvernight ? (overnightAvailable ? "ok" : "n/a") : "off"
+    avwapTxt = showAnchoredVwap ? (avwapAvailable and not na(anchoredVwap) ? "ok" : "n/a") : "off"
+    adrTxt = na(adrPctUsed) ? "warming" : str.tostring(adrPctUsed, "#.#") + "%"
+    vwapDistTxt = na(vwapDistance) ? "—" : str.tostring(vwapDistance, "#.##") + "ATR"
+    impulseTxt = not useImpulseRun ? "off" : impulseHudTxt
+    ts = size.tiny
+    lblReg = tableCompact ? "Reg" : "Regime"
+    lblRvol = tableCompact ? "RVol" : "RVOL"
+    lblSig = tableCompact ? "Sig" : "Signals"
+    lblImp = tableCompact ? "Imp" : "Impulse"
+    lblOr = "OR"
+    lblNote = tableCompact ? "—" : "Note"
+    noteTxt = tableCompact ? "px/vol" : "realized px/vol only"
+    for r = 0 to statusRows - 1
+        table.cell(status, 0, r, "", text_size = ts)
+        table.cell(status, 1, r, "", text_size = ts)
+    table.cell(status, 0, 0, lblReg, text_color = color.gray, text_size = ts)
+    table.cell(status, 1, 0, regimeLabel, text_color = regimeIsTrendUp ? color.lime : regimeIsTrendDown ? color.red : regimeIsBalanced ? color.aqua : color.yellow, text_size = ts)
+    table.cell(status, 0, 1, lblRvol, text_color = color.gray, text_size = ts)
+    table.cell(status, 1, 1, rvolTxt, text_color = rvolColor, text_size = ts)
+    table.cell(status, 0, 2, lblSig, text_color = color.gray, text_size = ts)
+    table.cell(status, 1, 2, signalWhy, text_color = color.white, text_size = ts)
+    table.cell(status, 0, 3, lblImp, text_color = color.gray, text_size = ts)
+    table.cell(status, 1, 3, impulseTxt, text_color = impulseLongAlert or impulseShortAlert ? color.lime : impulseLegLongLatched or impulseLegShortLatched ? color.aqua : color.white, text_size = ts)
+    table.cell(status, 0, 4, lblOr, text_color = color.gray, text_size = ts)
+    table.cell(status, 1, 4, orTxt, text_color = color.white, text_size = ts)
+    if not tableCompact
+        table.cell(status, 0, 5, "Session", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 5, inSession ? "RTH" : "out", text_color = color.white, text_size = ts)
+        table.cell(status, 0, 6, "Gap", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 6, gapBucket, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 7, "VWAP Δ", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 7, vwapDistTxt, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 8, "Reject", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 8, lastReject, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 9, "ONH/L", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 9, onhTxt, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 10, "HTF", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 10, htfStatus, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 11, "ADR", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 11, adrTxt, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 12, "Internals", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 12, internalsFlag, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 13, "Lead", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 13, leadershipFlag, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 14, "Risk", text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 14, refTargetNote, text_color = color.white, text_size = ts)
+        table.cell(status, 0, 15, lblNote, text_color = color.gray, text_size = ts)
+        table.cell(status, 1, 15, noteTxt, text_color = color.gray, text_size = ts)
+else if barstate.islast
+    table.clear(status, 0, 0, 1, statusRows - 1)
+
+alertcondition(orContLongAlert, "OR_Continuation_Long", "OR continuation long: {{ticker}} at {{close}}")
+alertcondition(orContShortAlert, "OR_Continuation_Short", "OR continuation short: {{ticker}} at {{close}}")
+alertcondition(vwapPullLongAlert, "VWAP_Pullback_Long", "VWAP pullback continuation long: {{ticker}} at {{close}}")
+alertcondition(vwapPullShortAlert, "VWAP_Pullback_Short", "VWAP pullback continuation short: {{ticker}} at {{close}}")
+alertcondition(failedOrLongAlert, "Failed_OR_Reversal_Long", "Failed OR reversal long: {{ticker}} at {{close}}")
+alertcondition(failedOrShortAlert, "Failed_OR_Reversal_Short", "Failed OR reversal short: {{ticker}} at {{close}}")
+alertcondition(vwapBandLongAlert, "VWAP_Band_MeanRev_Long", "VWAP band mean-reversion long: {{ticker}} at {{close}}")
+alertcondition(vwapBandShortAlert, "VWAP_Band_MeanRev_Short", "VWAP band mean-reversion short: {{ticker}} at {{close}}")
+alertcondition(impulseLongAlert, "Impulse_Run_Long", "Impulse run long: {{ticker}} at {{close}}")
+alertcondition(impulseShortAlert, "Impulse_Run_Short", "Impulse run short: {{ticker}} at {{close}}")

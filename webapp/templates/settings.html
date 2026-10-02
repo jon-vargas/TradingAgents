@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Settings</h1>
+  <p class="page-subtitle">Configure defaults and paths</p>
+</div>
+
+<div class="two-col">
+  <!-- Settings Form -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Defaults</h2>
+    </div>
+    <form id="settings-form">
+      <div class="form-group">
+        <label class="form-label" for="default_mode">Default Research Depth</label>
+        <select id="default_mode" name="default_mode" class="form-select">
+          <option value="quick">Quick</option>
+          <option value="standard">Standard</option>
+          <option value="deep">Deep</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="default_risk_profile">Default Risk Profile</label>
+        <select id="default_risk_profile" name="default_risk_profile" class="form-select">
+          <option value="aggressive">Aggressive (High Conviction)</option>
+          <option value="growth">Growth (Balanced)</option>
+          <option value="conservative">Conservative (Cautious)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="output_dir">Output Directory</label>
+        <input type="text" id="output_dir" name="output_dir" class="form-input" value="research_output">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="db_path">Database Path</label>
+        <input type="text" id="db_path" name="db_path" class="form-input" value="research.db">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="default_delay">Default Delay (seconds)</label>
+        <input type="number" id="default_delay" name="default_delay" class="form-input" value="30" min="0">
+      </div>
+      <button type="submit" class="btn btn-primary" id="save-btn">
+        💾 Save Settings
+      </button>
+      <span id="save-status" style="margin-left: var(--spacing-3); color: var(--qa-green);"></span>
+    </form>
+  </div>
+
+  <!-- API Keys Status -->
+  <div class="card" data-collapsible data-collapse-id="settings-keys">
+    <div class="card-header">
+      <h2 class="card-title">API Keys</h2>
+    </div>
+    <p style="color: var(--text-secondary); margin-bottom: var(--spacing-4);">
+      API keys are configured via environment variables or <code>.env</code> file.
+    </p>
+    <div id="api-keys-list">
+      <div class="loading"><span class="spinner"></span> Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Cache Management -->
+<div class="card" data-collapsible data-collapse-id="settings-cache" style="margin-top: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Cache Management</h2>
+  </div>
+  <p style="color: var(--text-secondary); margin-bottom: var(--spacing-4);">
+    API responses are cached locally to reduce API calls and speed up repeated analyses.
+  </p>
+  <div id="cache-info" style="margin-bottom: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+  <button type="button" class="btn btn-secondary" id="clear-cache-btn">
+    🗑️ Clear Cache
+  </button>
+  <span id="cache-status" style="margin-left: var(--spacing-3);"></span>
+</div>
+
+<!-- Optional Automation Status -->
+<div class="card" data-collapsible data-collapse-id="settings-automation" style="margin-top: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Optional Automation</h2>
+  </div>
+  <p style="color: var(--text-secondary); margin-bottom: var(--spacing-4);">
+    Background jobs that are off by default. Status from the screening scheduler.
+  </p>
+  <div id="automation-status-list">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Storage Management -->
+<div class="card" data-collapsible data-collapse-id="settings-storage" style="margin-top: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Storage Management</h2>
+  </div>
+  <p style="color: var(--text-secondary); margin-bottom: var(--spacing-4);">
+    Monitor disk usage across all output directories and run cleanup operations.
+  </p>
+  <div id="storage-info" style="margin-bottom: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading storage info...</div>
+  </div>
+  <div style="display: flex; gap: var(--spacing-3); align-items: center; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+      <label class="form-label" for="cleanup-days" style="margin:0; white-space:nowrap; font-size: var(--text-sm);">Max age (days)</label>
+      <input type="number" id="cleanup-days" class="form-input" value="90" min="1" style="width:70px;">
+    </div>
+    <button type="button" class="btn btn-secondary" id="cleanup-old-btn">
+      🧹 Cleanup Old Files
+    </button>
+    <button type="button" class="btn btn-secondary" id="vacuum-db-btn">
+      🗜️ Vacuum Database
+    </button>
+    <span id="storage-status" style="margin-left: var(--spacing-2);"></span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load current settings
+fetch('/api/settings')
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('default_mode').value = data.default_mode || 'standard';
+    document.getElementById('default_risk_profile').value = data.default_risk_profile || 'growth';
+    document.getElementById('output_dir').value = data.output_dir || 'research_output';
+    document.getElementById('db_path').value = data.db_path || 'research.db';
+    document.getElementById('default_delay').value = data.default_delay || 30;
+    
+    // API keys
+    const keys = data.api_keys || {};
+    let rows = Object.entries(keys).map(([key, configured]) => `
+      <div style="display: flex; justify-content: space-between; padding: var(--spacing-2) 0; border-bottom: 1px solid var(--border);">
+        <span>${key.replace('_', ' ').toUpperCase()}</span>
+        <span class="badge ${configured ? 'badge-success' : 'badge-error'}">
+          ${configured ? '✓ Set' : '✗ Missing'}
+        </span>
+      </div>
+    `).join('');
+    
+    document.getElementById('api-keys-list').innerHTML = rows || '<p>No API keys detected.</p>';
+  });
+
+fetch('/api/screening/scheduler/status')
+  .then(res => res.json())
+  .then(st => {
+    const jobs = st.automation || {};
+    const rows = [
+      ['Auto-discovery', jobs.auto_discovery, st.last_auto_discovery],
+      ['Adaptive weights', jobs.auto_adaptive_weights, st.last_adaptive_weights],
+      ['Auto backtest', jobs.auto_backtest, st.last_auto_backtest],
+      ['Movers scheduler', st.movers_enabled, st.last_movers_scan_at || st.last_movers_date],
+    ].map(([label, enabled, last]) => `
+      <div style="display:flex;justify-content:space-between;padding:var(--spacing-2) 0;border-bottom:1px solid var(--border);">
+        <span>${label}</span>
+        <span style="font-size:var(--text-sm);color:var(--text-secondary);">
+          <span class="badge ${enabled ? 'badge-success' : ''}" style="margin-right:8px;">${enabled ? 'enabled' : 'disabled'}</span>
+          ${last ? 'Last: ' + last : 'No run yet'}
+        </span>
+      </div>`).join('');
+    document.getElementById('automation-status-list').innerHTML = rows || '<p class="text-muted">Scheduler status unavailable.</p>';
+  })
+  .catch(() => {
+    document.getElementById('automation-status-list').innerHTML = '<p class="text-muted">Could not load scheduler status.</p>';
+  });
+
+// Save settings
+document.getElementById('settings-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const settings = {
+    default_mode: document.getElementById('default_mode').value,
+    default_risk_profile: document.getElementById('default_risk_profile').value,
+    output_dir: document.getElementById('output_dir').value,
+    db_path: document.getElementById('db_path').value,
+    default_delay: parseInt(document.getElementById('default_delay').value)
+  };
+  
+  fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings)
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('save-status').textContent = '✓ Saved';
+    setTimeout(() => {
+      document.getElementById('save-status').textContent = '';
+    }, 3000);
+  })
+  .catch(err => {
+    alert('Failed to save: ' + err.message);
+  });
+});
+
+// Load cache info
+function loadCacheInfo() {
+  fetch('/api/cache')
+    .then(res => res.json())
+    .then(data => {
+      if (!data.exists) {
+        document.getElementById('cache-info').innerHTML = '<p class="text-muted">No cache directory found.</p>';
+        return;
+      }
+      document.getElementById('cache-info').innerHTML = `
+        <div style="display: flex; gap: var(--spacing-6);">
+          <div>
+            <div class="text-muted" style="font-size: var(--text-sm);">Cached Files</div>
+            <div style="font-size: var(--text-xl); font-weight: 600;">${data.file_count}</div>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size: var(--text-sm);">Size</div>
+            <div style="font-size: var(--text-xl); font-weight: 600;">${data.size_mb} MB</div>
+          </div>
+        </div>
+      `;
+    })
+    .catch(() => {
+      document.getElementById('cache-info').innerHTML = '<p class="text-muted">Failed to load cache info.</p>';
+    });
+}
+
+loadCacheInfo();
+
+// Clear cache
+document.getElementById('clear-cache-btn').addEventListener('click', function() {
+  if (!confirm('Clear all cached API responses? This cannot be undone.')) return;
+  
+  const btn = this;
+  const status = document.getElementById('cache-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Clearing...';
+  
+  fetch('/api/cache', { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      status.textContent = `✓ Cleared ${data.cleared} files (${data.size_freed_mb} MB)`;
+      status.style.color = 'var(--qa-green)';
+      loadCacheInfo();
+    })
+    .catch(err => {
+      status.textContent = 'Error: ' + err.message;
+      status.style.color = 'var(--qa-red)';
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '🗑️ Clear Cache';
+      setTimeout(() => { status.textContent = ''; }, 5000);
+    });
+});
+
+// ── Storage Management ──
+function loadStorageInfo() {
+  fetch('/api/storage')
+    .then(res => res.json())
+    .then(data => {
+      const dirs = ['research_output', 'data_cache', 'eval_results', 'logs', 'database'];
+      let rows = dirs.map(key => {
+        const d = data[key] || {};
+        const files = d.file_count != null ? d.file_count : '—';
+        const mb = d.size_mb != null ? d.size_mb.toFixed(2) : '—';
+        const label = key.replace('_', ' ');
+        return `
+          <div style="display:flex;justify-content:space-between;padding:var(--spacing-2) 0;border-bottom:1px solid var(--border);">
+            <span style="text-transform:capitalize;">${label}</span>
+            <span>${files} files &nbsp;·&nbsp; ${mb} MB</span>
+          </div>`;
+      }).join('');
+      const total = data.total || {};
+      rows += `
+        <div style="display:flex;justify-content:space-between;padding:var(--spacing-2) 0;font-weight:600;">
+          <span>Total</span>
+          <span>${(total.size_mb || 0).toFixed(2)} MB</span>
+        </div>`;
+      document.getElementById('storage-info').innerHTML = rows;
+    })
+    .catch(() => {
+      document.getElementById('storage-info').innerHTML = '<p class="text-muted">Failed to load storage info.</p>';
+    });
+}
+loadStorageInfo();
+
+document.getElementById('cleanup-old-btn').addEventListener('click', function() {
+  const days = document.getElementById('cleanup-days').value || 90;
+  if (!confirm(`Delete files older than ${days} days across reports, eval logs, cache CSVs, and DB backups?`)) return;
+  const btn = this;
+  const status = document.getElementById('storage-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Cleaning...';
+  fetch(`/api/storage/cleanup?max_age_days=${days}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      const counts = [
+        `reports: ${data.reports?.count || 0}`,
+        `eval: ${data.eval_results?.count || 0}`,
+        `CSVs: ${data.cache_csvs?.count || 0}`,
+        `backups: ${data.db_backups?.count || 0}`,
+      ].join(', ');
+      status.textContent = `✓ Removed — ${counts}`;
+      status.style.color = 'var(--qa-green)';
+      loadStorageInfo();
+    })
+    .catch(err => {
+      status.textContent = 'Error: ' + err.message;
+      status.style.color = 'var(--qa-red)';
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '🧹 Cleanup Old Files';
+      setTimeout(() => { status.textContent = ''; }, 8000);
+    });
+});
+
+document.getElementById('vacuum-db-btn').addEventListener('click', function() {
+  const btn = this;
+  const status = document.getElementById('storage-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Vacuuming...';
+  fetch('/api/storage/vacuum', { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+      const saved = (data.bytes_saved / 1024).toFixed(1);
+      status.textContent = `✓ Vacuumed — saved ${saved} KB`;
+      status.style.color = 'var(--qa-green)';
+      loadStorageInfo();
+    })
+    .catch(err => {
+      status.textContent = 'Error: ' + err.message;
+      status.style.color = 'var(--qa-red)';
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '🗜️ Vacuum Database';
+      setTimeout(() => { status.textContent = ''; }, 5000);
+    });
+});
+</script>
+{% endblock %}

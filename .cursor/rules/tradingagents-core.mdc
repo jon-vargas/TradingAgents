@@ -1,0 +1,59 @@
+---
+description: TradingAgents core invariants — repo map, guardrails, canonical doc shortcuts
+alwaysApply: true
+---
+
+# TradingAgents core
+
+## Repo layout
+
+- Screening engine: `tradingagents/screening/` (`engine.py`, `reversal_buildup.py`, `movers.py`, `long_horizon.py`, `scan_all_mtf.py`, …)
+- Multi-agent analysis: `tradingagents/graph/`, `tradingagents/agents/`, `tradingagents/research.py`
+- Data providers + cache: `tradingagents/dataflows/`
+- Persistence + reports: `tradingagents/reporting/` (`database.py`, `research.db` locally)
+- Web UI + API: `webapp/app.py`, `webapp/templates/`, `webapp/static/`
+- CLI entrypoints: `cli/`, `scripts/`, `main.py`
+- Tests: `tests/` (synthetic OHLCV preferred; no live Yahoo in unit tests)
+- Config: `tradingagents/default_config.py`, `.env` (local secrets)
+
+## Guardrails
+
+- Do **not** create git commits unless the user explicitly asks.
+- Do **not** edit Cursor plan files (e.g. `~/.cursor/plans/*.plan.md`) unless the user asks.
+- Unresolved bare `open` CRITICAL/SIGNIFICANT QA findings block implementation (scan `docs/qa/feedback/*.md` + legacy `docs/qa/FEEDBACK.md`).
+- Prefer existing docs, Makefile targets, and scripts over inventing new workflows.
+- Use **project-local** Cursor skills only (`.cursor/skills/`); never `~/.cursor/skills/`.
+
+## Canonical docs
+
+- Index: `docs/README.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Operator runbook: `USER_MANUAL.md`
+- QA workflow: `docs/qa/README.md`
+- Agent bootstrap: `docs/agent-onboarding.md`, `AGENTS.md` — run `/onboard`
+
+When the user invokes `/onboard`:
+
+1. Do **not** improvise a different bootstrap.
+2. Read and follow **`.cursor/skills/project-onboard/SKILL.md`** (this repo only).
+3. Parse optional `focus=screening|webapp|analysis|pipeline|qa` (default: general).
+4. Run the continuity scan (SESSION.md, session-feedback blockers, dirty/WIP, recent commits).
+5. Emit the Working Brief, then ask what they are trying to ship.
+
+When the user invokes `/handoff`: follow the same skill’s **End-of-chat handoff** and write `docs/qa/SESSION.md`.
+
+When the user invokes `/docs-capture` (or asks to update docs after this chat’s changes):
+
+1. Do **not** rewrite the whole docs tree.
+2. Read and follow **`.cursor/skills/docs-capture/SKILL.md`** (this repo only).
+3. Capture from this chat + git into SSOT docs only; honor `dry-run` when requested.
+4. Emit the Docs capture report (updated / skipped / needs decision).
+
+## Domain shortcuts
+
+- Screening / presets / Scan All → `tradingagents/screening/`, `webapp/templates/screener.html`, `tests/test_scan_all_mtf.py`
+- Reversal buildup → `tradingagents/screening/reversal_buildup.py`, `tests/test_reversal_buildup.py`
+- Cross-watchlist board → `webapp/app.py` (`_latest_runs_for_lens`, consolidators), `docs/qa/feedback/`
+- Analysis reports → `tradingagents/graph/`, `webapp/templates/report.html`, `tests/test_report_*.py`
+- Plan QA → `/qa-*` commands and `.cursor/rules/qa-workflow.mdc`
+- Shipped-feature QA → `/feature-audit` (not a substitute for `/qa-loop` on plans)

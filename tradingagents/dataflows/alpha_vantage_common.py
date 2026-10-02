@@ -1,11 +1,19 @@
 import os
+import logging
 import requests
 import pandas as pd
 import json
+from typing import Set
 from datetime import datetime
 from io import StringIO
 
+from tradingagents.dataflows.cache import get_cache
+
+logger = logging.getLogger("tradingagents.dataflows.alpha_vantage_common")
+
 API_BASE_URL = "https://www.alphavantage.co/query"
+_LISTING_STATUS_CACHE_KEY = "av_listing_status:active_us"
+_LISTING_STATUS_TTL_SECONDS = 24 * 60 * 60
 
 def get_api_key() -> str:
     """Retrieve the API key for Alpha Vantage from environment variables."""
@@ -118,5 +126,51 @@ def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> 
 
     except Exception as e:
         # If filtering fails, return original data with a warning
-        print(f"Warning: Failed to filter CSV data by date range: {e}")
+        logger.warning(f"Failed to filter CSV data by date range: {e}")
         return csv_data
+
+
+def get_active_us_symbols() -> Set[str]:
+    """Fetch active US stock symbols via LISTING_STATUS (24h cached)."""
+    cache = get_cache()
+    cached = cache.get("fundamentals", _LISTING_STATUS_CACHE_KEY)
+    if isinstance(cached, list):
+        return {str(s).upper() for s in cached if str(s).strip()}
+    if isinstance(cached, set):
+        return {str(s).upper() for s in cached if str(s).strip()}
+
+    try:
+        csv_text = _make_api_request("LISTING_STATUS", {"state": "active"})
+        if not isinstance(csv_text, str) or not csv_text.strip():
+            return set()
+        frame = pd.read_csv(StringIO(csv_text))
+    except Exception as exc:
+        logger.warning("Alpha Vantage LISTING_STATUS failed: %s", exc)
+        return set()
+
+    out: Set[str] = set()
+    for _, row in frame.iterrows():
+        try:
+            symbol = str(row.get("symbol") or "").strip().upper()
+            status = str(row.get("status") or "").strip().lower()
+            asset_type = str(row.get("assetType") or "").strip().lower()
+            exchange = str(row.get("exchange") or "").strip().upper()
+            if not symbol:
+                continue
+            if status and status != "active":
+                continue
+            if asset_type and asset_type not in {"stock", "etf"}:
+                continue
+            if exchange and exchange not in {"NYSE", "NASDAQ", "NYSE ARCA", "AMEX", "BATS", "NYSE MKT"}:
+                continue
+            out.add(symbol.replace(".", "-"))
+        except Exception:
+            continue
+
+    cache.set(
+        "fundamentals",
+        _LISTING_STATUS_CACHE_KEY,
+        data=sorted(out),
+        ttl=_LISTING_STATUS_TTL_SECONDS,
+    )
+    return out

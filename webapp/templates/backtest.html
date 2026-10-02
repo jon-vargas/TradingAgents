@@ -1,0 +1,731 @@
+{% extends "base.html" %}
+
+{% block title %}Backtest - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Backtesting</h1>
+  <p class="page-subtitle">Decision-signed P&amp;L vs stored tape. Cards are all stored outcomes, not the Max Analyses cap on the next job.</p>
+</div>
+
+<!-- Stats Overview -->
+<div id="stats-panel" class="stats-grid" style="margin-bottom: var(--spacing-6);">
+  <div class="loading"><span class="spinner"></span> Loading stats...</div>
+</div>
+
+<!-- Run Backtest Form -->
+<div class="card" data-collapsible data-collapse-id="bt-form" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header"><h2 class="card-title">Run Backtest</h2></div>
+  <div class="card-body">
+  <form id="backtest-form">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
+      <div class="form-group">
+        <label class="form-label" for="bt-ticker">Ticker (optional)</label>
+        <input type="text" id="bt-ticker" class="form-input" placeholder="e.g., AAPL (blank = all)">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bt-start">Start Date</label>
+        <input type="date" id="bt-start" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bt-end">End Date</label>
+        <input type="date" id="bt-end" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bt-limit">Max Analyses</label>
+        <input type="number" id="bt-limit" class="form-input" value="50" min="1" max="500">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bt-lookahead">Lookahead Days</label>
+        <input type="text" id="bt-lookahead" class="form-input" value="7, 14, 30" placeholder="7, 14, 30">
+        <small class="form-hint" style="color: var(--text-muted); font-size: var(--text-xs);">Comma-separated day offsets</small>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bt-slippage">Slippage (bps)</label>
+        <input type="number" id="bt-slippage" class="form-input" value="0" min="0" max="100" step="0.5">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bt-cost">Transaction Cost (bps)</label>
+        <input type="number" id="bt-cost" class="form-input" value="0" min="0" max="100" step="0.5">
+      </div>
+      <div class="form-group" style="align-self: flex-end;">
+        <button type="submit" class="btn btn-primary" id="run-backtest-btn">Run Backtest</button>
+      </div>
+    </div>
+  </form>
+  <div id="backtest-results" style="margin-top: var(--spacing-4);"></div>
+  </div>
+</div>
+
+<!-- Agent Attribution -->
+<div class="card" data-collapsible data-collapse-id="bt-attribution" data-collapsed style="margin-bottom: var(--spacing-6);">
+  <div class="card-header"><h2 class="card-title">Researcher stance vs tape</h2></div>
+  <div class="card-body">
+    <div id="attribution-panel">
+      <div class="text-muted" style="text-align: center;">Run a backtest or view stats to see researcher stance vs 7d tape (unparsed rows are skipped).</div>
+    </div>
+  </div>
+</div>
+
+<!-- Calibration -->
+<div class="card" data-collapsible data-collapse-id="bt-calibration" data-collapsed style="margin-bottom: var(--spacing-6);">
+  <div class="card-header"><h2 class="card-title">Confidence Calibration</h2></div>
+  <div class="card-body">
+    <p class="text-muted" style="margin-bottom: var(--spacing-3);">Are high-confidence decisions more accurate? Each bin shows avg confidence vs actual accuracy.</p>
+    <div id="calibration-panel">
+      <div class="loading"><span class="spinner"></span> Loading calibration...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Calibration by Decision (BUY / HOLD / SELL) -->
+<div class="card" data-collapsible data-collapse-id="bt-cal-decision" data-collapsed style="margin-bottom: var(--spacing-6);">
+  <div class="card-header"><h2 class="card-title">Calibration by Decision</h2></div>
+  <div class="card-body">
+    <p class="text-muted" style="margin-bottom: var(--spacing-3);">Are BUY decisions more accurately calibrated than HOLD/SELL? Detects decision-class confidence biases.</p>
+    <div id="cal-decision-panel">
+      <div class="loading"><span class="spinner"></span> Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Calibration by Factor Family -->
+<div class="card" data-collapsible data-collapse-id="bt-cal-factor" data-collapsed style="margin-bottom: var(--spacing-6);">
+  <div class="card-header"><h2 class="card-title">Calibration by Factor Family</h2></div>
+  <div class="card-body">
+    <p class="text-muted" style="margin-bottom: var(--spacing-3);">Confidence-accuracy calibration sliced by the dominant factor regime (Value, Quality, Momentum, etc.).</p>
+    <div id="cal-factor-panel">
+      <div class="loading"><span class="spinner"></span> Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Reverse-DCF Accuracy -->
+<div class="card" data-collapsible data-collapse-id="bt-rdcf" data-collapsed style="margin-bottom: var(--spacing-6);">
+  <div class="card-header"><h2 class="card-title">Reverse-DCF Accuracy</h2></div>
+  <div class="card-body">
+    <p class="text-muted" style="margin-bottom: var(--spacing-3);">How close are our market-implied growth rates to analyst consensus? Shows error distribution across all analyses with reverse-DCF data.</p>
+    <div id="rdcf-accuracy-panel">
+      <div class="loading"><span class="spinner"></span> Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Backtest Run History -->
+<div class="card" data-collapsible data-collapse-id="bt-history">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 class="card-title">Run History</h2>
+    <button class="btn btn-secondary" id="refresh-runs-btn">Refresh</button>
+  </div>
+  <div class="card-body">
+    <div id="runs-table">
+      <div class="loading"><span class="spinner"></span> Loading runs...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// =========================================================================
+// STATS
+// =========================================================================
+
+async function loadStats() {
+  const panel = document.getElementById('stats-panel');
+  try {
+    const resp = await fetch('/api/backtest/stats');
+    const data = await resp.json();
+
+    if (data.total_backtested === 0) {
+      panel.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No Backtested Analyses Yet</div>
+          <p>Run a backtest below to validate your analysis decisions against actual market outcomes.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const accColor = data.accuracy >= 50 ? 'var(--qa-green)' : 'var(--qa-red)';
+    const signed7 = data.avg_signed_return_7d;
+    const retColor = (signed7 == null || signed7 >= 0) ? 'var(--qa-green)' : 'var(--qa-red)';
+    const fmtSigned = (v) => v == null ? 'N/A' : `${v > 0 ? '+' : ''}${v}%`;
+    const tapeNote = data.avg_tape_return_7d != null
+      ? `Tape 7d ${data.avg_tape_return_7d > 0 ? '+' : ''}${data.avg_tape_return_7d}% (unsigned)`
+      : '';
+
+    panel.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Backtested</div>
+        <div class="stat-value">${data.total_backtested}</div>
+        <div class="stat-sub">All stored outcomes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">7d Directional Accuracy</div>
+        <div class="stat-value" style="color: ${accColor};">${data.accuracy}%</div>
+        <div class="stat-sub">${data.directional_hits_7d || 0}/${data.directional_n_7d || 0} BUY+SELL</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Signed Return (7d)</div>
+        <div class="stat-value" style="color: ${retColor};">${fmtSigned(signed7)}</div>
+        <div class="stat-sub">n=${data.n_signed_7d || 0} HOLD excluded${tapeNote ? ' · ' + tapeNote : ''}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Signed Return (14d)</div>
+        <div class="stat-value">${fmtSigned(data.avg_signed_return_14d)}</div>
+        <div class="stat-sub">n=${data.n_14d || 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Signed Return (30d)</div>
+        <div class="stat-value">${fmtSigned(data.avg_signed_return_30d)}</div>
+        <div class="stat-sub">n=${data.n_30d || 0}</div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid var(--qa-blue, #3182ce);">
+        <div class="stat-label">Signed Alpha vs SPY (7d)</div>
+        <div class="stat-value" style="color: ${(data.avg_signed_alpha_7d || 0) >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};">${fmtSigned(data.avg_signed_alpha_7d)}</div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid var(--qa-blue, #3182ce);">
+        <div class="stat-label">Signed Alpha vs SPY (14d)</div>
+        <div class="stat-value" style="color: ${(data.avg_signed_alpha_14d || 0) >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};">${fmtSigned(data.avg_signed_alpha_14d)}</div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid var(--qa-blue, #3182ce);">
+        <div class="stat-label">Signed Alpha vs SPY (30d)</div>
+        <div class="stat-value" style="color: ${(data.avg_signed_alpha_30d || 0) >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};">${fmtSigned(data.avg_signed_alpha_30d)}</div>
+      </div>
+    `;
+
+    // Update attribution panel
+    renderAttribution(data.agent_attribution, data.by_decision, data.by_risk_profile);
+  } catch (err) {
+    panel.innerHTML = `<div class="text-muted">Failed to load stats: ${err.message}</div>`;
+  }
+}
+
+function renderAttribution(attribution, byDecision, byProfile) {
+  const panel = document.getElementById('attribution-panel');
+  const bull = attribution?.bull || {};
+  const bear = attribution?.bear || {};
+  const research = attribution?.research || {};
+
+  let decisionRows = '';
+  for (const [key, val] of Object.entries(byDecision || {})) {
+    const ret = val.avg_signed_return_7d != null ? val.avg_signed_return_7d : val.avg_return_7d;
+    const alpha = val.avg_signed_alpha_7d != null ? val.avg_signed_alpha_7d : val.avg_alpha_7d;
+    const retColor = (ret || 0) >= 0 ? 'var(--qa-green)' : 'var(--qa-red)';
+    const alphaColor = (alpha || 0) >= 0 ? 'var(--qa-green)' : 'var(--qa-red)';
+    const retLabel = ret == null ? '—' : `${ret > 0 ? '+' : ''}${ret}%`;
+    const alphaLabel = alpha == null ? '—' : `${alpha > 0 ? '+' : ''}${alpha}%`;
+    decisionRows += `
+      <tr>
+        <td><span class="${getDecisionClass(key)}">${key}</span></td>
+        <td>${val.count}</td>
+        <td>${val.wins}</td>
+        <td>${val.accuracy}%</td>
+        <td style="color: ${retColor};">${retLabel}</td>
+        <td style="color: ${alphaColor};">${alphaLabel}</td>
+      </tr>
+    `;
+  }
+
+  let profileRows = '';
+  const profileColors = { aggressive: '#c53030', growth: '#2f855a', conservative: '#2b6cb0' };
+  for (const [key, val] of Object.entries(byProfile || {})) {
+    const ret = val.avg_signed_return_7d != null ? val.avg_signed_return_7d : val.avg_return_7d;
+    profileRows += `
+      <tr>
+        <td><span class="badge" style="background: ${profileColors[key] || '#888'}; color: white;">${key}</span></td>
+        <td>${val.count}</td>
+        <td>${val.wins}</td>
+        <td>${val.accuracy}%</td>
+        <td>${ret == null ? '—' : ((ret > 0 ? '+' : '') + ret + '%')}</td>
+      </tr>
+    `;
+  }
+
+  const stanceCard = (label, row, color) => {
+    const n = row.n || 0;
+    const wr = n ? ((row.win_rate * 100) || 0).toFixed(1) : '—';
+    const skipped = row.skipped || 0;
+    return `
+      <div class="stat-card" style="border-left: 4px solid ${color};">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value" style="color: ${color};">${n ? wr + '%' : 'n=0'}</div>
+        <div class="stat-sub">${row.wins || 0}W / ${row.losses || 0}L · skipped ${skipped}</div>
+      </div>
+    `;
+  };
+
+  panel.innerHTML = `
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-4); margin-bottom: var(--spacing-4);">
+      ${stanceCard('Bull vs 7d tape', bull, 'var(--qa-green)')}
+      ${stanceCard('Bear vs 7d tape', bear, 'var(--qa-red)')}
+      ${stanceCard('Research vs 7d tape', research, 'var(--qa-blue, #3182ce)')}
+    </div>
+    ${decisionRows ? `
+    <h3 style="margin-bottom: var(--spacing-2);">By Decision Type (7d signed; HOLD = band)</h3>
+    <table>
+      <thead><tr><th>Decision</th><th>Count</th><th>Hits</th><th>Accuracy</th><th>Signed Return (7d)</th><th>Signed Alpha (7d)</th></tr></thead>
+      <tbody>${decisionRows}</tbody>
+    </table>
+    ` : ''}
+    ${profileRows ? `
+    <h3 style="margin: var(--spacing-4) 0 var(--spacing-2);">By Risk Profile</h3>
+    <table>
+      <thead><tr><th>Profile</th><th>Count</th><th>Hits</th><th>Accuracy</th><th>Signed Return (7d)</th></tr></thead>
+      <tbody>${profileRows}</tbody>
+    </table>
+    ` : ''}
+  `;
+}
+
+// =========================================================================
+// CALIBRATION
+// =========================================================================
+
+async function loadCalibration() {
+  const panel = document.getElementById('calibration-panel');
+  try {
+    const resp = await fetch('/api/backtest/calibration');
+    const data = await resp.json();
+    const bins = data.bins || [];
+    const meta = data.meta || {};
+
+    if (meta.error || bins.length === 0 || meta.total_samples === 0) {
+      panel.innerHTML = `
+        <div class="text-muted" style="text-align: center;">
+          Not enough backtested data for calibration. Need at least ${meta.min_samples || 10} samples per bin.
+        </div>
+      `;
+      return;
+    }
+
+    const binSize = 100 / bins.length;
+    let rows = bins.map((bin, i) => {
+      const [avgConf, accuracy, count] = bin;
+      const rangeLabel = `${Math.round(i * binSize)}%-${Math.round((i + 1) * binSize)}%`;
+      if (avgConf < 0 || accuracy < 0) {
+        return `<tr><td>${rangeLabel}</td><td colspan="3" class="text-muted">Insufficient data (${count} samples)</td></tr>`;
+      }
+      const accPct = (accuracy * 100).toFixed(1);
+      const diff = accuracy * 100 - avgConf;
+      const diffColor = diff >= 0 ? 'var(--qa-green)' : 'var(--qa-red)';
+      const diffSign = diff >= 0 ? '+' : '';
+      // Visual bar
+      const barWidth = Math.min(100, Math.max(5, accuracy * 100));
+      return `
+        <tr>
+          <td>${rangeLabel}</td>
+          <td>${avgConf.toFixed(1)}%</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="flex: 1; background: var(--bg-secondary); border-radius: 4px; height: 20px; position: relative;">
+                <div style="width: ${barWidth}%; background: ${diff >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'}; height: 100%; border-radius: 4px; opacity: 0.7;"></div>
+              </div>
+              <span style="min-width: 50px;">${accPct}%</span>
+            </div>
+          </td>
+          <td style="color: ${diffColor};">${diffSign}${diff.toFixed(1)}pp</td>
+          <td>${count}</td>
+        </tr>
+      `;
+    }).join('');
+
+    panel.innerHTML = `
+      <table>
+        <thead><tr><th>Confidence Range</th><th>Avg Confidence</th><th>Actual Accuracy</th><th>Gap</th><th>Samples</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="text-muted" style="margin-top: var(--spacing-2); font-size: var(--text-xs);">
+        Total samples: ${meta.total_samples} | Valid bins: ${meta.valid_bins}/${meta.bins}
+      </div>
+    `;
+  } catch (err) {
+    panel.innerHTML = `<div class="text-muted">Failed to load calibration: ${err.message}</div>`;
+  }
+}
+
+// =========================================================================
+// CALIBRATION BY DECISION
+// =========================================================================
+
+function _renderCalSlices(slices, containerId, emptyMsg) {
+  const panel = document.getElementById(containerId);
+  if (!slices || Object.keys(slices).length === 0) {
+    panel.innerHTML = `<div class="text-muted" style="text-align:center;">${emptyMsg}</div>`;
+    return;
+  }
+  const sections = Object.entries(slices).map(([label, d]) => {
+    const bins = d.bins || [];
+    if (bins.length === 0 || (d.meta || {}).total_samples === 0) {
+      return `<div style="margin-bottom:var(--spacing-4);"><strong>${label}</strong><br><span class="text-muted">No data</span></div>`;
+    }
+    const binSize = 100 / bins.length;
+    const rows = bins.map((bin, i) => {
+      const [avgConf, accuracy, count] = bin;
+      const rangeLabel = `${Math.round(i * binSize)}%-${Math.round((i + 1) * binSize)}%`;
+      if (avgConf < 0 || accuracy < 0) {
+        return `<tr><td>${rangeLabel}</td><td colspan="3" class="text-muted">Insufficient (${count})</td></tr>`;
+      }
+      const diff = accuracy * 100 - avgConf;
+      const diffColor = diff >= 0 ? 'var(--qa-green)' : 'var(--qa-red)';
+      const barWidth = Math.min(100, Math.max(5, accuracy * 100));
+      return `<tr>
+        <td>${rangeLabel}</td>
+        <td>${avgConf.toFixed(1)}%</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;background:var(--bg-secondary);border-radius:4px;height:16px;">
+              <div style="width:${barWidth}%;background:${diff >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};height:100%;border-radius:4px;opacity:0.7;"></div>
+            </div>
+            <span style="min-width:44px;">${(accuracy * 100).toFixed(1)}%</span>
+          </div>
+        </td>
+        <td style="color:${diffColor};">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}pp</td>
+        <td>${count}</td>
+      </tr>`;
+    }).join('');
+    const meta = d.meta || {};
+    return `
+      <div style="margin-bottom:var(--spacing-5);">
+        <div style="font-size:13px;font-weight:600;margin-bottom:var(--spacing-2);">${label}
+          <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px;">${meta.total_samples || 0} samples</span>
+        </div>
+        <table>
+          <thead><tr><th>Confidence</th><th>Avg Conf</th><th>Accuracy</th><th>Gap</th><th>N</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+  panel.innerHTML = sections;
+}
+
+async function loadCalibrationByDecision() {
+  const panel = document.getElementById('cal-decision-panel');
+  try {
+    const resp = await fetch('/api/screening/calibration-by-decision');
+    const data = await resp.json();
+    if (!data.available) {
+      panel.innerHTML = `<div class="text-muted" style="text-align:center;">${data.reason || 'No data available.'}</div>`;
+      return;
+    }
+    _renderCalSlices(data.calibration, 'cal-decision-panel', 'No decision-sliced calibration data yet.');
+  } catch (err) {
+    panel.innerHTML = `<div class="text-muted">Failed to load: ${err.message}</div>`;
+  }
+}
+
+async function loadCalibrationByFactor() {
+  const panel = document.getElementById('cal-factor-panel');
+  try {
+    const resp = await fetch('/api/screening/calibration-by-factor');
+    const data = await resp.json();
+    if (!data.available) {
+      panel.innerHTML = `<div class="text-muted" style="text-align:center;">${data.reason || 'No factor-sliced calibration data yet.'}</div>`;
+      return;
+    }
+    _renderCalSlices(data.calibration, 'cal-factor-panel', 'No factor-sliced calibration data yet.');
+  } catch (err) {
+    panel.innerHTML = `<div class="text-muted">Failed to load: ${err.message}</div>`;
+  }
+}
+
+// =========================================================================
+// REVERSE-DCF ACCURACY
+// =========================================================================
+
+async function loadReverseDcfAccuracy() {
+  const panel = document.getElementById('rdcf-accuracy-panel');
+  try {
+    const resp = await fetch('/api/screening/reverse-dcf-accuracy');
+    const data = await resp.json();
+    if (!data.available) {
+      panel.innerHTML = `<div class="text-muted" style="text-align:center;">${data.reason || 'No reverse-DCF data yet. Run analyses to accumulate implied growth rates.'}</div>`;
+      return;
+    }
+
+    // Error distribution bars
+    const dist = data.error_distribution || {};
+    const totalInDist = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
+    const distHtml = Object.entries(dist).map(([bucket, cnt]) => {
+      const pct = Math.round((cnt / totalInDist) * 100);
+      const color = bucket === '0-5%' ? 'var(--qa-green)' : bucket === '5-10%' ? '#0891b2' : bucket === '10-20%' ? '#d97706' : '#dc2626';
+      return `<div style="margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+          <span style="color:var(--text-secondary);">Error ${bucket}</span>
+          <span style="color:${color};font-weight:600;">${cnt} (${pct}%)</span>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:3px;height:12px;">
+          <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;opacity:0.8;"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Top-50 rows table
+    const rows = (data.rows || []).slice(0, 20).map(r => {
+      const err = (r.abs_error * 100).toFixed(1);
+      const errColor = r.abs_error < 0.05 ? 'var(--qa-green)' : r.abs_error < 0.10 ? '#0891b2' : r.abs_error < 0.20 ? '#d97706' : '#dc2626';
+      return `<tr>
+        <td style="font-weight:600;">${r.ticker}</td>
+        <td>${r.analysis_date}</td>
+        <td>${(r.implied_growth_rate * 100).toFixed(1)}%</td>
+        <td>${(r.consensus_growth * 100).toFixed(1)}%</td>
+        <td style="color:${errColor};font-weight:600;">${err}pp</td>
+      </tr>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-6);">
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:var(--spacing-3);">Summary
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px;">${data.sample_count} analyses</span>
+          </div>
+          <div style="display:flex;gap:var(--spacing-4);margin-bottom:var(--spacing-4);">
+            <div class="stat-card">
+              <div class="stat-label">Mean Abs Error</div>
+              <div class="stat-value">${(data.mean_abs_error * 100).toFixed(1)}pp</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Median Abs Error</div>
+              <div class="stat-value">${(data.median_abs_error * 100).toFixed(1)}pp</div>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:var(--spacing-2);">ERROR DISTRIBUTION</div>
+          ${distHtml}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:var(--spacing-3);">Recent Analyses (top 20)</div>
+          <div style="overflow-x:auto;">
+            <table style="font-size:11px;">
+              <thead><tr><th>Ticker</th><th>Date</th><th>Implied</th><th>Consensus</th><th>Error</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  } catch (err) {
+    panel.innerHTML = `<div class="text-muted">Failed to load: ${err.message}</div>`;
+  }
+}
+
+// =========================================================================
+// RUN BACKTEST
+// =========================================================================
+
+document.getElementById('backtest-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const ticker = document.getElementById('bt-ticker').value.trim().toUpperCase() || null;
+  const start_date = document.getElementById('bt-start').value || null;
+  const end_date = document.getElementById('bt-end').value || null;
+  const limit = parseInt(document.getElementById('bt-limit').value) || 50;
+  const lookahead_str = document.getElementById('bt-lookahead').value;
+  const lookahead_days = lookahead_str.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+  const slippage_bps = parseFloat(document.getElementById('bt-slippage').value) || 0;
+  const transaction_cost_bps = parseFloat(document.getElementById('bt-cost').value) || 0;
+
+  if (lookahead_days.length === 0) {
+    alert('Please enter at least one valid lookahead day (e.g., 7, 14, 30)');
+    return;
+  }
+
+  const btn = document.getElementById('run-backtest-btn');
+  const resultsPanel = document.getElementById('backtest-results');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  resultsPanel.innerHTML = `
+    <div class="loading">
+      <span class="spinner"></span>
+      Running backtest${ticker ? ` for ${ticker}` : ''} (${limit} analyses, ${lookahead_days.join('/')}d lookahead)...
+    </div>
+  `;
+
+  try {
+    const resp = await fetch('/api/backtest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker, start_date, end_date, limit, lookahead_days, slippage_bps, transaction_cost_bps }),
+    });
+    const data = await resp.json();
+
+    // Poll for job completion
+    pollJobStatus(data.job_id, function(job) {
+      if (job.status === 'queued' || job.status === 'running') {
+        return; // Still running
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = 'Run Backtest';
+
+      if (job.status === 'failed') {
+        resultsPanel.innerHTML = `
+          <div style="text-align: center; color: var(--qa-red);">
+            <div style="font-size: 2em;">&#10060;</div>
+            <h3>Backtest Failed</h3>
+            <p>${job.error}</p>
+          </div>
+        `;
+        return;
+      }
+
+      const r = job.result;
+      const accColor = r.accuracy * 100 >= 50 ? 'var(--qa-green)' : 'var(--qa-red)';
+      const wrColor = r.win_rate * 100 >= 50 ? 'var(--qa-green)' : 'var(--qa-red)';
+      const signed = r.avg_signed_return_7d;
+      const vol = r.return_vol_7d;
+
+      let skipInfo = '';
+      if (r.skip_reasons && Object.keys(r.skip_reasons).length > 0) {
+        const reasons = Object.entries(r.skip_reasons).map(([k, v]) => `${k}: ${v}`).join(', ');
+        skipInfo = `<div class="text-muted" style="font-size: var(--text-xs); margin-top: var(--spacing-2);">Skip reasons: ${reasons}</div>`;
+      }
+
+      let costInfo = '';
+      if (r.slippage_bps > 0 || r.transaction_cost_bps > 0) {
+        costInfo = `<div class="text-muted" style="font-size: var(--text-xs);">Costs: slippage=${r.slippage_bps}bps, transaction=${r.transaction_cost_bps}bps</div>`;
+      }
+
+      resultsPanel.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: var(--radius); padding: var(--spacing-4);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--spacing-3); margin-bottom: var(--spacing-3);">
+            <div class="stat-card">
+              <div class="stat-label">Updated</div>
+              <div class="stat-value">${r.updated}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Skipped</div>
+              <div class="stat-value">${r.skipped}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Win Rate (signed 7d)</div>
+              <div class="stat-value" style="color: ${wrColor};">${(r.win_rate * 100).toFixed(1)}%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">7d Directional Accuracy</div>
+              <div class="stat-value" style="color: ${accColor};">${(r.accuracy * 100).toFixed(1)}%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Signed Return (7d)</div>
+              <div class="stat-value">${signed != null ? ((signed * 100).toFixed(2) + '%') : 'N/A'}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Tape Return (7d)</div>
+              <div class="stat-value">${(r.avg_return * 100).toFixed(2)}%</div>
+            </div>
+            <div class="stat-card" style="border-left: 3px solid var(--qa-blue, #3182ce);">
+              <div class="stat-label">7d Return/Vol</div>
+              <div class="stat-value">${vol != null ? vol.toFixed(2) : 'N/A'}</div>
+            </div>
+          </div>
+          ${costInfo}
+          ${skipInfo}
+          ${r.backtest_run_id ? `<div class="text-muted" style="font-size: var(--text-xs);">Run ID: #${r.backtest_run_id}</div>` : ''}
+        </div>
+      `;
+
+      // Refresh everything
+      loadStats();
+      loadCalibration();
+      loadRuns();
+    }, 3000);
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = 'Run Backtest';
+    resultsPanel.innerHTML = `<div style="color: var(--qa-red);">Request failed: ${err.message}</div>`;
+  }
+});
+
+// =========================================================================
+// RUNS TABLE
+// =========================================================================
+
+async function loadRuns() {
+  const container = document.getElementById('runs-table');
+  try {
+    const resp = await fetch('/api/backtest/runs?limit=20');
+    const runs = await resp.json();
+
+    if (runs.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No Backtest Runs Yet</div>
+          <p>Run your first backtest above to start tracking performance.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const rows = runs.map(run => {
+      const accColor = run.accuracy * 100 >= 50 ? 'var(--qa-green)' : 'var(--qa-red)';
+      const signed = run.avg_signed_return_7d;
+      const retColor = (signed == null ? run.avg_return : signed) >= 0 ? 'var(--qa-green)' : 'var(--qa-red)';
+      const dateRange = (run.start_date || '-') + ' to ' + (run.end_date || '-');
+      const costs = (run.slippage_bps || 0) > 0 || (run.transaction_cost_bps || 0) > 0
+        ? `${run.slippage_bps}/${run.transaction_cost_bps} bps`
+        : '-';
+      const signedLabel = signed != null ? ((signed * 100).toFixed(2) + '%') : '—';
+      const volLabel = run.return_vol_7d != null ? run.return_vol_7d.toFixed(2) : '—';
+      return `
+        <tr>
+          <td>${run.id}</td>
+          <td>${run.run_at ? run.run_at.split('T')[0] + ' ' + (run.run_at.split('T')[1] || '').substring(0, 5) : '-'}</td>
+          <td>${run.ticker || 'All'}</td>
+          <td>${dateRange}</td>
+          <td>${run.lookahead_days || '-'}</td>
+          <td>${costs}</td>
+          <td>${run.updated_count}/${run.skipped_count}</td>
+          <td style="color: ${retColor};">${signedLabel}</td>
+          <td>${(run.avg_return * 100).toFixed(2)}%</td>
+          <td>${(run.win_rate * 100).toFixed(1)}%</td>
+          <td style="color: ${accColor}; font-weight: 600;">${(run.accuracy * 100).toFixed(1)}%</td>
+          <td>${volLabel}</td>
+          <td style="color: ${run.avg_alpha_30d != null ? (run.avg_alpha_30d >= 0 ? 'var(--qa-green)' : 'var(--qa-red)') : 'inherit'};">${run.avg_alpha_30d != null ? ((run.avg_alpha_30d * 100).toFixed(2) + '%') : '-'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Run At</th>
+            <th>Ticker</th>
+            <th>Date Range</th>
+            <th>Lookahead</th>
+            <th>Costs</th>
+            <th>Updated/Skipped</th>
+            <th>Signed 7d</th>
+            <th>Tape 7d</th>
+            <th>Win Rate</th>
+            <th>Accuracy</th>
+            <th>7d Ret/Vol</th>
+            <th>Tape Alpha (30d)</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="text-muted">Failed to load runs: ${err.message}</div>`;
+  }
+}
+
+document.getElementById('refresh-runs-btn').addEventListener('click', loadRuns);
+
+// =========================================================================
+// INIT
+// =========================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+  loadCalibration();
+  loadCalibrationByDecision();
+  loadCalibrationByFactor();
+  loadReverseDcfAccuracy();
+  loadRuns();
+});
+</script>
+{% endblock %}

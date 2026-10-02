@@ -1,0 +1,22 @@
+{
+  "Dow Jones 30": {
+    "replacement_watchlist_name": "S&P 500",
+    "replacement_index_key": "sp500_full",
+    "reason": "Consolidated large-cap coverage under registry-backed S&P 500"
+  },
+  "Russell 2000 Top 100": {
+    "replacement_watchlist_name": "Russell 2000",
+    "replacement_index_key": "russell2000_full",
+    "reason": "Legacy top-100 operator view replaced by broad small-cap registry view"
+  },
+  "S&P 500 Top 100": {
+    "replacement_watchlist_name": "S&P 500",
+    "replacement_index_key": "sp500_full",
+    "reason": "Legacy top-100 operator view replaced by full index registry view"
+  },
+  "Biotech Pre-Catalyst": {
+    "replacement_watchlist_name": "Healthcare & Life Sciences",
+    "replacement_index_key": null,
+    "reason": "Deprecated niche biotech list consolidated into comprehensive Healthcare & Life Sciences curated basket"
+  }
+}

@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-subtitle">Overview of your research activity</p>
+</div>
+
+<!-- Active Jobs Banner (shown dynamically if jobs are running) -->
+<div id="active-jobs-banner" style="display: none; margin-bottom: var(--spacing-6);">
+  <div class="card" style="border-left: 4px solid var(--accent); background: linear-gradient(135deg, var(--bg-primary) 0%, var(--accent-muted) 100%);">
+    <div class="card-header">
+      <h2 class="card-title" style="display: flex; align-items: center; gap: var(--spacing-2);">
+        <span class="spinner"></span>
+        <span>Analyses in Progress</span>
+      </h2>
+    </div>
+    <div id="active-jobs-list" style="padding: var(--spacing-4);"></div>
+  </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid" id="stats-grid" hx-get="/api/dashboard" hx-trigger="load" hx-swap="innerHTML">
+  <div class="loading"><span class="spinner"></span> Loading stats...</div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Quick Actions</h2>
+  </div>
+  <div class="quick-actions">
+    <a href="/analyze" class="btn btn-primary" data-action="new-analysis">
+      🔍 New Analysis
+    </a>
+    <a href="/batch" class="btn btn-secondary">
+      📋 Batch Run
+    </a>
+    <a href="/compare" class="btn btn-secondary">
+      ⚖️ Compare
+    </a>
+    <a href="/history" class="btn btn-secondary">
+      📜 View History
+    </a>
+  </div>
+</div>
+
+<!-- Saved Views -->
+<div class="card" data-collapsible data-collapse-id="dash-views" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Saved Views</h2>
+    <a href="/history" class="btn btn-secondary btn-sm">Manage Views</a>
+  </div>
+  <div id="saved-views-container" style="padding: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Risk Profile Performance -->
+<div class="card" data-collapsible data-collapse-id="dash-risk" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Risk Profile Performance</h2>
+  </div>
+  <div id="profile-performance" style="padding: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Recent Alerts -->
+<div class="card" data-collapsible data-collapse-id="dash-alerts" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Recent Alerts</h2>
+    <a href="/alerts" class="btn btn-secondary btn-sm">View All</a>
+  </div>
+  <div id="recent-alerts-container" style="padding: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Momentum Watch -->
+<div class="card" data-collapsible data-collapse-id="dash-momentum" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Momentum Watch</h2>
+    <a href="/screener?lens=momentum#scan-all-results" class="btn btn-secondary btn-sm">Open Screener</a>
+  </div>
+  <div id="momentum-watch-container" style="padding: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Recent Discoveries -->
+<div class="card" data-collapsible data-collapse-id="dash-discover" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h2 class="card-title">Recent Discoveries</h2>
+    <a href="/screener#discover-card" class="btn btn-secondary btn-sm">Open Hopper</a>
+  </div>
+  <div id="recent-discoveries-container" style="padding: var(--spacing-4);">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="card" data-collapsible data-collapse-id="dash-analyses">
+  <div class="card-header">
+    <h2 class="card-title">Recent Analyses</h2>
+    <a href="/history" class="btn btn-secondary btn-sm">View All</a>
+  </div>
+  <div class="table-container" id="recent-table" hx-get="/api/analyses?limit=10" hx-trigger="load" hx-swap="innerHTML">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Transform dashboard stats response into HTML
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+  if (evt.detail.target.id === 'stats-grid') {
+    const data = JSON.parse(evt.detail.xhr.responseText);
+    
+    // Also update profile performance section
+    const profileContainer = document.getElementById('profile-performance');
+    if (data.profile_stats) {
+      const profiles = ['aggressive', 'growth', 'conservative'];
+      const colors = { aggressive: '#c53030', growth: '#2f855a', conservative: '#2b6cb0' };
+      const labels = { aggressive: 'Aggressive', growth: 'Growth', conservative: 'Conservative' };
+      
+      let hasBacktestData = profiles.some(p => data.profile_stats[p]?.backtested > 0);
+      
+      if (!hasBacktestData) {
+        profileContainer.innerHTML = `
+          <div class="text-muted" style="text-align: center;">
+            No backtested analyses yet. Run analyses and backtest them to see performance by risk profile.
+          </div>
+        `;
+      } else {
+        profileContainer.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
+            ${profiles.map(p => {
+              const stats = data.profile_stats[p] || {};
+              const hasData = stats.backtested > 0;
+              return `
+                <div class="card" style="padding: var(--spacing-4); border-left: 4px solid ${colors[p]};">
+                  <div style="font-weight: 600; margin-bottom: var(--spacing-2); color: ${colors[p]};">${labels[p]}</div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-2); font-size: var(--text-sm);">
+                    <div>
+                      <div class="text-muted">Analyses</div>
+                      <div style="font-weight: 600;">${stats.count || 0}</div>
+                    </div>
+                    <div>
+                      <div class="text-muted">Backtested</div>
+                      <div style="font-weight: 600;">${stats.backtested || 0}</div>
+                    </div>
+                    <div>
+                      <div class="text-muted">Accuracy (7d dir.)</div>
+                      <div style="font-weight: 600; color: ${hasData && stats.accuracy >= 50 ? 'var(--qa-green)' : hasData ? 'var(--qa-red)' : 'inherit'};">
+                        ${hasData ? stats.accuracy + '%' : '-'}
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-muted">Signed Return (7d)</div>
+                      <div style="font-weight: 600; color: ${hasData && stats.avg_return >= 0 ? 'var(--qa-green)' : hasData ? 'var(--qa-red)' : 'inherit'};">
+                        ${hasData ? (stats.avg_return >= 0 ? '+' : '') + stats.avg_return + '%' : '-'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+    evt.detail.target.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Analyses</div>
+        <div class="stat-value">${data.total_analyses}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Duration</div>
+        <div class="stat-value">${data.avg_duration}s</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Confidence</div>
+        <div class="stat-value">${data.avg_confidence}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Quality</div>
+        <div class="stat-value">${data.avg_quality}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">QA Warnings</div>
+        <div class="stat-value">${data.qa_warning_count}</div>
+      </div>
+      ${(() => {
+        const ir = data.index_regime || {};
+        const fmt = formatIndexRegime(ir);
+        if (!fmt.label) return '';
+        return `
+      <div class="stat-card" style="border-left: 4px solid ${fmt.color};${fmt.border ? ` box-shadow: inset 0 0 0 ${fmt.border};` : ''}">
+        <div class="stat-label">Index Regime</div>
+        <div class="stat-value" style="color: ${fmt.color}; font-size: var(--text-sm);">${fmt.label}</div>
+      </div>`;
+      })()}
+      <div class="stat-card">
+        <div class="stat-label">SEC Snapshots</div>
+        <div class="stat-value">${data.sec_snapshot_count}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transcript Snapshots</div>
+        <div class="stat-value">${data.transcript_snapshot_count}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Decisions</div>
+        <div class="stat-value" style="font-size: var(--text-sm);">
+          <span class="badge badge-buy">BUY ${data.decision_counts.BUY}</span>
+          <span class="badge badge-sell">SELL ${data.decision_counts.SELL}</span>
+          <span class="badge badge-hold">HOLD ${data.decision_counts.HOLD}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Risk Profiles</div>
+        <div class="stat-value" style="font-size: var(--text-sm);">
+          <span class="badge" style="background: var(--qa-red); color: var(--bg-primary);">Aggr ${data.risk_profile_counts?.aggressive || 0}</span>
+          <span class="badge" style="background: var(--qa-green); color: var(--bg-primary);">Growth ${data.risk_profile_counts?.growth || 0}</span>
+          <span class="badge" style="background: var(--accent); color: var(--bg-primary);">Cons ${data.risk_profile_counts?.conservative || 0}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Research Modes</div>
+        <div class="stat-value" style="font-size: var(--text-sm);">
+          <span class="badge badge-secondary">Quick ${data.analysis_mode_counts?.quick || 0}</span>
+          <span class="badge badge-secondary">Std ${data.analysis_mode_counts?.standard || 0}</span>
+          <span class="badge" style="background: var(--qa-amber); color: var(--bg-primary);">Deep ${data.analysis_mode_counts?.deep || 0}</span>
+        </div>
+      </div>
+      ${data.backtested_count > 0 ? `
+      <div class="stat-card" style="background: linear-gradient(135deg, var(--bg-primary) 0%, ${data.backtest_accuracy >= 50 ? 'var(--qa-green-bg)' : 'var(--qa-red-bg)'} 100%);">
+        <div class="stat-label">7d Directional Accuracy</div>
+        <div class="stat-value" style="color: ${data.backtest_accuracy >= 50 ? 'var(--qa-green)' : 'var(--qa-red)'};">${data.backtest_accuracy}%</div>
+        <div class="stat-sub">${data.backtest_wins}W / ${data.backtest_losses}L (${data.n_signed_7d || data.backtested_count} BUY+SELL)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Signed Return (7d)</div>
+        <div class="stat-value" style="color: ${data.avg_return >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};">${data.avg_return >= 0 ? '+' : ''}${data.avg_return}%</div>
+        <div class="stat-sub">HOLD excluded · same book as /backtest</div>
+      </div>
+      ` : ''}
+    `;
+  }
+  
+  if (evt.detail.target.id === 'recent-table') {
+    const data = JSON.parse(evt.detail.xhr.responseText);
+    if (data.length === 0) {
+      evt.detail.target.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No analyses yet</div>
+          <p>Run your first analysis to get started.</p>
+          <a href="/analyze" class="btn btn-primary" style="margin-top: var(--spacing-4);">New Analysis</a>
+        </div>
+      `;
+      return;
+    }
+    
+    let rows = data.map(a => {
+      const decisionClass = getDecisionClass(a.decision);
+      const decisionLabel = a.decision_label || formatDecisionLabel(a.decision, parsePositionAction(a));
+      const qaHtml = formatQAWarningGroups(a);
+      return `
+        <tr>
+          <td><a href="/history/${a.id}">${a.ticker}</a></td>
+          <td>${a.analysis_date}</td>
+          <td><span class="${decisionClass}">${decisionLabel}</span></td>
+          <td>${a.confidence || 0}%</td>
+          <td>${a.data_quality_score || 0}%</td>
+          <td>${qaHtml}</td>
+          <td>
+            ${a.sec_snapshot ? '📄' : ''}
+            ${a.transcript_snapshot ? '🎤' : ''}
+          </td>
+          <td>
+            <a href="/history/${a.id}" class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    
+    evt.detail.target.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Date</th>
+            <th>Decision</th>
+            <th>Confidence</th>
+            <th>Quality</th>
+            <th>QA Status</th>
+            <th>Snapshots</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+});
+
+// Check for active jobs and display banner
+async function checkActiveJobs() {
+  try {
+    const res = await fetch('/api/jobs?active_only=true');
+    const data = await res.json();
+    const banner = document.getElementById('active-jobs-banner');
+    const list = document.getElementById('active-jobs-list');
+    
+    if (data.jobs && data.jobs.length > 0) {
+      banner.style.display = 'block';
+      list.innerHTML = data.jobs.map(job => {
+        const ticker = job.ticker || (job.tickers ? job.tickers.join(', ') : 'Unknown');
+        const mode = job.mode || 'standard';
+        const profile = job.risk_profile || 'growth';
+        const status = job.status === 'running' ? 'Running' : 'Queued';
+        const elapsed = job.started_at ? Math.round((Date.now() - new Date(job.started_at).getTime()) / 1000) : 0;
+        
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-2) 0; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <strong>${ticker}</strong>
+              <span class="badge badge-secondary" style="margin-left: var(--spacing-2);">${mode}</span>
+              <span class="badge" style="margin-left: var(--spacing-1); background: var(--accent); color: white;">${profile}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-3);">
+              <span class="text-muted">${status}${elapsed > 0 ? ` (${formatDuration(elapsed)})` : ''}</span>
+              <a href="/analyze" class="btn btn-secondary btn-sm">View Progress</a>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      // Poll for updates every 5 seconds
+      setTimeout(checkActiveJobs, 5000);
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch (err) {
+    console.error('Failed to check active jobs:', err);
+  }
+}
+checkActiveJobs();
+
+// Load saved views
+fetch('/api/views')
+  .then(res => res.json())
+  .then(views => {
+    const container = document.getElementById('saved-views-container');
+    if (views.length === 0) {
+      container.innerHTML = `
+        <div class="text-muted" style="text-align: center;">
+          No saved views yet. Create one from the History page.
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = views.map(v => {
+      const filterSummary = Object.entries(v.filters || {})
+        .filter(([k, val]) => val)
+        .map(([k, val]) => `${k}: ${val}`)
+        .join(', ') || 'All analyses';
+      
+      return `
+        <a href="/history?view=${v.id}" class="card" style="display: block; margin-bottom: var(--spacing-2); padding: var(--spacing-3); text-decoration: none; color: inherit;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong>${v.name}</strong>
+              <div class="text-muted" style="font-size: var(--text-sm);">${filterSummary}</div>
+            </div>
+            <span class="text-muted">→</span>
+          </div>
+        </a>
+      `;
+    }).join('');
+  })
+  .catch(() => {
+    document.getElementById('saved-views-container').innerHTML = 
+      '<div class="text-muted">Failed to load views</div>';
+  });
+
+// Load recent alerts for dashboard card
+fetch('/api/alerts?limit=5')
+  .then(r => r.json())
+  .then(data => {
+    const container = document.getElementById('recent-alerts-container');
+    const alerts = data.alerts || [];
+    const unread = data.unread_count || 0;
+
+    if (alerts.length === 0) {
+      container.innerHTML = `
+        <div class="text-muted" style="text-align: center;">
+          No unread alerts. <a href="/alerts">Create alert rules</a> to start monitoring.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="margin-bottom: var(--spacing-2); font-size: var(--text-sm); color: var(--text-muted);">
+        ${unread} unread alert${unread !== 1 ? 's' : ''}
+      </div>
+      ${alerts.slice(0, 5).map(a => `
+        <div class="card" style="padding: var(--spacing-3); margin-bottom: var(--spacing-2); border-left: 3px solid var(--warning);">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+              <strong>${a.ticker}</strong>
+              <span class="text-muted" style="font-size: var(--text-sm); margin-left: var(--spacing-2);">
+                ${(a.alert_type || '').replace(/_/g, ' ')}
+              </span>
+              <div style="font-size: var(--text-sm); margin-top: 2px;">${a.message || ''}</div>
+            </div>
+            <span class="text-muted" style="font-size: var(--text-xs); white-space: nowrap;">
+              ${a.triggered_at ? new Date(a.triggered_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : ''}
+            </span>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  })
+  .catch(() => {
+    document.getElementById('recent-alerts-container').innerHTML =
+      '<div class="text-muted">Failed to load alerts</div>';
+  });
+
+fetch('/api/screen-all/latest?strategy=early_momentum&top=5')
+  .then(r => r.ok ? r.json() : null)
+  .then(data => {
+    const container = document.getElementById('momentum-watch-container');
+    if (!container) return;
+    if (!data || !(data.top_opportunities || []).length) {
+      container.innerHTML = '<div class="text-muted">No momentum runs yet. Run Scan All with Early momentum on the screener.</div>';
+      return;
+    }
+    const events = data.totals?.event_count || 0;
+    const rows = data.top_opportunities.slice(0, 5).map(r => {
+      const em = r.early_momentum || (r.signals || {})._early_momentum || {};
+      const score = r.momentum_score != null ? r.momentum_score : em.score_final || em.score;
+      const bucket = em.bucket || '—';
+      const evt = em.event_flag ? ' · event' : '';
+      return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+        <strong>${r.ticker}</strong>
+        <span class="text-muted" style="font-size:12px;">${score != null ? Number(score).toFixed(1) : '—'} · ${bucket}${evt}</span>
+      </div>`;
+    }).join('');
+    container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${events} event-flagged · top 5 leaders</div>${rows}`;
+  })
+  .catch(() => {
+    const container = document.getElementById('momentum-watch-container');
+    if (container) container.innerHTML = '<div class="text-muted">Failed to load momentum snapshot</div>';
+  });
+
+function formatDiscoveryWhen(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+  } catch (_) {
+    return iso;
+  }
+}
+
+function discoverySourceLabel(source) {
+  return source === 'auto' ? 'Auto' : 'Manual';
+}
+
+// Load recent Perplexity discovery runs
+fetch('/api/discover/history?limit=5')
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(data => {
+    const container = document.getElementById('recent-discoveries-container');
+    const runs = data.runs || [];
+
+    if (runs.length === 0) {
+      container.innerHTML = `
+        <div class="text-muted" style="text-align: center;">
+          No discovery runs yet.
+          <a href="/screener#discover-card">Run Discover</a> on the screener to hopper new tickers.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="table-container">
+        <table class="data-table" style="width: 100%; font-size: var(--text-sm);">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Source</th>
+              <th>Theme / Template</th>
+              <th>Results</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${runs.map(run => `
+              <tr>
+                <td class="text-muted">${formatDiscoveryWhen(run.run_at)}</td>
+                <td><span class="badge">${discoverySourceLabel(run.source)}</span></td>
+                <td>
+                  <div>${(run.theme || '—').slice(0, 80)}${(run.theme || '').length > 80 ? '…' : ''}</div>
+                  ${run.template_label ? `<div class="text-muted" style="font-size: var(--text-xs);">${run.template_label}</div>` : ''}
+                </td>
+                <td>${run.validated_count || 0} valid · ${run.new_count || 0} new</td>
+                <td>${run.status || 'completed'}</td>
+                <td><a href="/screener#discover-run-${run.id}" class="btn btn-sm btn-secondary">View</a></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  })
+  .catch(() => {
+    document.getElementById('recent-discoveries-container').innerHTML =
+      '<div class="text-muted">Failed to load discovery history</div>';
+  });
+</script>
+{% endblock %}

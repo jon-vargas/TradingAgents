@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}TradingAgents{% endblock %}</title>
+  <script>
+    // Apply saved theme immediately to prevent flash
+    (function() {
+      var theme = localStorage.getItem('theme');
+      var valid = ['light', 'ivory', 'dark', 'midnight', 'nord', 'dusk', 'ember'];
+      document.documentElement.setAttribute('data-theme', valid.includes(theme) ? theme : 'light');
+    })();
+    // Apply saved sidebar state immediately to prevent layout shift
+    (function() {
+      if (localStorage.getItem('sidebar-collapsed') === '1') {
+        document.documentElement.classList.add('sidebar-is-collapsed');
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  {% block head_extra %}{% endblock %}
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    .alert-badge {
+      position: absolute;
+      top: 2px;
+      right: 6px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">📊 TradingAgents</div>
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard" class="nav-item">
+          <span class="nav-icon">🏠</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="/analyze" class="nav-item">
+          <span class="nav-icon">🔍</span>
+          <span>Analyze</span>
+        </a>
+        <a href="/batch" class="nav-item">
+          <span class="nav-icon">📋</span>
+          <span>Batch</span>
+        </a>
+        <a href="/history" class="nav-item">
+          <span class="nav-icon">📜</span>
+          <span>History</span>
+        </a>
+        <a href="/backtest" class="nav-item">
+          <span class="nav-icon">📊</span>
+          <span>Backtest</span>
+        </a>
+        <a href="/screener" class="nav-item">
+          <span class="nav-icon">🔎</span>
+          <span>Screener</span>
+        </a>
+        <a href="/alerts" class="nav-item" id="alerts-nav-item" style="position: relative;">
+          <span class="nav-icon">🔔</span>
+          <span>Alerts</span>
+          <span id="alert-badge" class="alert-badge" style="display: none;">0</span>
+        </a>
+        <a href="/compare" class="nav-item">
+          <span class="nav-icon">⚖️</span>
+          <span>Compare</span>
+        </a>
+        <a href="/snapshots" class="nav-item">
+          <span class="nav-icon">📄</span>
+          <span>Snapshots</span>
+        </a>
+        <a href="/qa" class="nav-item">
+          <span class="nav-icon">✅</span>
+          <span>QA / Health</span>
+        </a>
+        <a href="/settings" class="nav-item">
+          <span class="nav-icon">⚙️</span>
+          <span>Settings</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer" style="padding: var(--spacing-4); border-top: 1px solid var(--border); transition: opacity 0.15s ease, height 0.2s ease, padding 0.2s ease;">
+        <div class="theme-selector">
+          <label class="filter-label" style="margin-bottom: var(--spacing-1); display: block;">Theme</label>
+          <select id="theme-select" class="form-select" style="width: 100%;">
+            <option value="light">☀️ Light</option>
+            <option value="ivory">📜 Ivory</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="midnight">🌌 Midnight</option>
+            <option value="nord">❄️ Nord</option>
+            <option value="dusk">🌆 Dusk</option>
+            <option value="ember">🍂 Ember</option>
+          </select>
+        </div>
+        <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--spacing-3);">
+          Press <kbd>/</kbd> to search<br>
+          <kbd>g</kbd> + key to navigate
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    // Alert badge polling — fetches unread count every 60 seconds
+    (function() {
+      function updateAlertBadge() {
+        fetch('/api/alerts')
+          .then(r => r.json())
+          .then(data => {
+            const badge = document.getElementById('alert-badge');
+            if (!badge) return;
+            const count = data.unread_count || 0;
+            if (count > 0) {
+              badge.textContent = count > 99 ? '99+' : count;
+              badge.style.display = 'flex';
+            } else {
+              badge.style.display = 'none';
+            }
+          })
+          .catch(() => {});
+      }
+      // Initial check
+      updateAlertBadge();
+      // Poll every 60 seconds
+      setInterval(updateAlertBadge, 60000);
+    })();
+  </script>
+  <script>
+    // Sidebar collapse/expand toggle — persisted to localStorage
+    (function() {
+      var sidebar = document.getElementById('app-sidebar');
+      var toggle = document.getElementById('sidebar-toggle');
+      if (!sidebar || !toggle) return;
+
+      // Restore saved state (transfer the flash-prevention class to the proper .collapsed class)
+      if (localStorage.getItem('sidebar-collapsed') === '1') {
+        sidebar.classList.add('collapsed');
+      }
+      // Remove the html-level flash-prevention class now that the sidebar element has the real class
+      document.documentElement.classList.remove('sidebar-is-collapsed');
+
+      toggle.addEventListener('click', function() {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+      });
+    })();
+  </script>
+  <script>
+  // =========================================================================
+  // Collapsible Cards — global utility
+  // =========================================================================
+  // Usage: add data-collapsible and data-collapse-id="unique-key" to a .card.
+  //   <div class="card" data-collapsible data-collapse-id="my-section">
+  //     <div class="card-header"><h3>Title</h3></div>
+  //     <div class="card-body">...</div>
+  //   </div>
+  // The card-header becomes clickable with a chevron indicator.
+  // Collapsed state is persisted in localStorage.
+  // Add data-collapsed to start collapsed by default.
+  (function() {
+    function initCollapsible() {
+      document.querySelectorAll('[data-collapsible]').forEach(function(card) {
+        var header = card.querySelector('.card-header');
+        var body = card.querySelector('.card-body');
+        if (!header || !body) return;
+        if (header.dataset._collapsibleInit) return;
+        header.dataset._collapsibleInit = '1';
+
+        var id = card.dataset.collapseId || '';
+        var storageKey = id ? 'collapse-' + id : '';
+
+        // Add chevron indicator
+        var chevron = document.createElement('span');
+        chevron.className = 'collapse-chevron';
+        chevron.innerHTML = '&#9660;';
+        chevron.style.cssText = 'margin-left:auto; font-size:14px; color:var(--text-secondary); transition:transform 0.2s ease; flex-shrink:0;';
+        header.style.cursor = 'pointer';
+        header.style.userSelect = 'none';
+        // Ensure header is flex for chevron alignment
+        if (getComputedStyle(header).display !== 'flex') {
+          header.style.display = 'flex';
+          header.style.alignItems = 'center';
+        }
+        header.appendChild(chevron);
+
+        function setCollapsed(collapsed, animate) {
+          if (collapsed) {
+            body.style.display = 'none';
+            chevron.style.transform = 'rotate(-90deg)';
+          } else {
+            body.style.display = '';
+            chevron.style.transform = 'rotate(0deg)';
+          }
+          if (storageKey) {
+            localStorage.setItem(storageKey, collapsed ? '1' : '0');
+          }
+        }
+
+        // Determine initial state: localStorage > data-collapsed attribute > expanded
+        var saved = storageKey ? localStorage.getItem(storageKey) : null;
+        if (saved !== null) {
+          setCollapsed(saved === '1', false);
+        } else if (card.hasAttribute('data-collapsed')) {
+          setCollapsed(true, false);
+        }
+
+        header.addEventListener('click', function(e) {
+          // Don't toggle if clicking a button, select, input, or link inside header
+          if (e.target.closest('button, select, input, a, .btn')) return;
+          var isCollapsed = body.style.display === 'none';
+          setCollapsed(!isCollapsed, true);
+        });
+      });
+    }
+    // Run on load and also expose for dynamic content
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCollapsible);
+    } else {
+      initCollapsible();
+    }
+    window.initCollapsible = initCollapsible;
+  })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

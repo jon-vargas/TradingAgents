@@ -48,10 +48,10 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
 
     def _extract_current_situation(self, current_state: Dict[str, Any]) -> str:
         """Extract the current market situation from the state."""
-        curr_market_report = current_state["market_report"]
-        curr_sentiment_report = current_state["sentiment_report"]
-        curr_news_report = current_state["news_report"]
-        curr_fundamentals_report = current_state["fundamentals_report"]
+        curr_market_report = current_state.get("market_report", "") or ""
+        curr_sentiment_report = current_state.get("sentiment_report", "") or ""
+        curr_news_report = current_state.get("news_report", "") or ""
+        curr_fundamentals_report = current_state.get("fundamentals_report", "") or ""
 
         return f"{curr_market_report}\n\n{curr_sentiment_report}\n\n{curr_news_report}\n\n{curr_fundamentals_report}"
 
@@ -73,7 +73,8 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
     def reflect_bull_researcher(self, current_state, returns_losses, bull_memory):
         """Reflect on bull researcher's analysis and update memory."""
         situation = self._extract_current_situation(current_state)
-        bull_debate_history = current_state["investment_debate_state"]["bull_history"]
+        inv_debate = current_state.get("investment_debate_state") or {}
+        bull_debate_history = inv_debate.get("bull_history", "")
 
         result = self._reflect_on_component(
             "BULL", bull_debate_history, situation, returns_losses
@@ -83,7 +84,8 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
     def reflect_bear_researcher(self, current_state, returns_losses, bear_memory):
         """Reflect on bear researcher's analysis and update memory."""
         situation = self._extract_current_situation(current_state)
-        bear_debate_history = current_state["investment_debate_state"]["bear_history"]
+        inv_debate = current_state.get("investment_debate_state") or {}
+        bear_debate_history = inv_debate.get("bear_history", "")
 
         result = self._reflect_on_component(
             "BEAR", bear_debate_history, situation, returns_losses
@@ -93,7 +95,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
     def reflect_trader(self, current_state, returns_losses, trader_memory):
         """Reflect on trader's decision and update memory."""
         situation = self._extract_current_situation(current_state)
-        trader_decision = current_state["trader_investment_plan"]
+        trader_decision = current_state.get("trader_investment_plan", "")
 
         result = self._reflect_on_component(
             "TRADER", trader_decision, situation, returns_losses
@@ -103,7 +105,8 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
     def reflect_invest_judge(self, current_state, returns_losses, invest_judge_memory):
         """Reflect on investment judge's decision and update memory."""
         situation = self._extract_current_situation(current_state)
-        judge_decision = current_state["investment_debate_state"]["judge_decision"]
+        inv_debate = current_state.get("investment_debate_state") or {}
+        judge_decision = inv_debate.get("judge_decision", "")
 
         result = self._reflect_on_component(
             "INVEST JUDGE", judge_decision, situation, returns_losses
@@ -113,7 +116,8 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
     def reflect_risk_manager(self, current_state, returns_losses, risk_manager_memory):
         """Reflect on risk manager's decision and update memory."""
         situation = self._extract_current_situation(current_state)
-        judge_decision = current_state["risk_debate_state"]["judge_decision"]
+        risk_debate = current_state.get("risk_debate_state") or {}
+        judge_decision = risk_debate.get("judge_decision", "")
 
         result = self._reflect_on_component(
             "RISK JUDGE", judge_decision, situation, returns_losses

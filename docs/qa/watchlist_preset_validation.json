@@ -1,0 +1,4431 @@
+{
+  "watchlist": "My Watchlist",
+  "watchlist_id": 12,
+  "source_run_id": 1335,
+  "run_ids": {
+    "snapshot": 1335,
+    "momentum_hunter": 1336,
+    "value_fisher": 1337,
+    "earnings_play": 1338,
+    "smart_money_tracker": 1339,
+    "short_squeeze": 1340,
+    "quality_compounder": 1341,
+    "long_horizon_12to36m": 1342,
+    "dividend_income": 1343
+  },
+  "n_scored": 321,
+  "n_input": 327,
+  "snapshot_signal_stats": {
+    "relative_strength": {
+      "n": 321,
+      "none": 0,
+      "zero": 118,
+      "mean": 0.4195227414330218,
+      "p90": 1.0
+    },
+    "ma_crossover": {
+      "n": 321,
+      "none": 0,
+      "zero": 154,
+      "mean": 0.3103395638629283,
+      "p90": 1.0
+    },
+    "trend_strength": {
+      "n": 321,
+      "none": 0,
+      "zero": 119,
+      "mean": 0.38305140186915887,
+      "p90": 1.0
+    },
+    "volume_surge": {
+      "n": 321,
+      "none": 0,
+      "zero": 251,
+      "mean": 0.04255015576323987,
+      "p90": 0.12404
+    },
+    "quality_factor": {
+      "n": 179,
+      "none": 142,
+      "zero": 15,
+      "mean": 0.5327558659217877,
+      "p90": 1.0
+    },
+    "income_factor": {
+      "n": 64,
+      "none": 257,
+      "zero": 0,
+      "mean": 0.4680296875,
+      "p90": 0.726
+    },
+    "valuation_gap": {
+      "n": 321,
+      "none": 0,
+      "zero": 273,
+      "mean": 0.06344361370716511,
+      "p90": 0.23704
+    },
+    "estimate_momentum": {
+      "n": 300,
+      "none": 21,
+      "zero": 167,
+      "mean": 0.287526,
+      "p90": 1.0
+    },
+    "rating_momentum": {
+      "n": 310,
+      "none": 11,
+      "zero": 129,
+      "mean": 0.2940351612903226,
+      "p90": 0.5284599999999999
+    },
+    "pead_drift": {
+      "n": 226,
+      "none": 95,
+      "zero": 225,
+      "mean": 0.0022088495575221237,
+      "p90": 0.0
+    },
+    "options_sentiment": {
+      "n": 321,
+      "none": 0,
+      "zero": 261,
+      "mean": 0.06105919003115265,
+      "p90": 0.4
+    },
+    "smart_money": {
+      "n": 321,
+      "none": 0,
+      "zero": 232,
+      "mean": 0.1002570093457944,
+      "p90": 0.41600000000000004
+    },
+    "insider_buying": {
+      "n": 321,
+      "none": 0,
+      "zero": 253,
+      "mean": 0.16199376947040497,
+      "p90": 0.6
+    },
+    "earnings_proximity": {
+      "n": 321,
+      "none": 0,
+      "zero": 214,
+      "mean": 0.1468847352024922,
+      "p90": 0.74666
+    },
+    "price_vs_target": {
+      "n": 321,
+      "none": 0,
+      "zero": 166,
+      "mean": 0.28517258566978193,
+      "p90": 1.0
+    },
+    "weekly_trend_alignment": {
+      "n": 96,
+      "none": 225,
+      "zero": 0,
+      "mean": 0.6915625,
+      "p90": 0.8299999999999998
+    },
+    "residual_momentum_12_1": {
+      "n": 0,
+      "none": 321,
+      "zero": 0,
+      "mean": null,
+      "p90": null
+    }
+  },
+  "analyses": [
+    {
+      "preset": "momentum_hunter",
+      "n": 321,
+      "avg_score": 23.19753894080997,
+      "top_avg": 57.554,
+      "directions": {
+        "bullish": 220,
+        "neutral": 101
+      },
+      "avg_coverage": 46.58255451713396,
+      "sleeve_top": 0.7234533333333334,
+      "sleeve_bottom": 0.0007683333333333333,
+      "sleeve_spread": 0.722685,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "UMAC",
+          "score": 64.12,
+          "dir": "bullish",
+          "eq": 18.73,
+          "risk": 49.1,
+          "opp": 43.1,
+          "sleeve": 0.891675,
+          "quality": 34.8,
+          "value": 13.5,
+          "income": null,
+          "flow": 46.0,
+          "mom": 62.7,
+          "rev": 25.0,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.908,
+            "trend_strength": 0.6587
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "DDD",
+          "score": 60.81,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 71.0,
+          "sleeve": 0.75,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "ANET",
+          "score": 58.65,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 74.8,
+          "sleeve": 0.702975,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 0.8119,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "P",
+          "score": 58.41,
+          "dir": "bullish",
+          "eq": 10.84,
+          "risk": 36.6,
+          "opp": 45.5,
+          "sleeve": 0.7899,
+          "quality": 73.7,
+          "value": 0.0,
+          "income": null,
+          "flow": 20.0,
+          "mom": 59.4,
+          "rev": 51.7,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.1596,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "PAYC",
+          "score": 58.38,
+          "dir": "bullish",
+          "eq": 22.38,
+          "risk": 36.5,
+          "opp": 54.9,
+          "sleeve": 0.75,
+          "quality": 80.0,
+          "value": 29.5,
+          "income": 30.0,
+          "flow": 61.5,
+          "mom": 57.1,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "FIGS",
+          "score": 57.18,
+          "dir": "bullish",
+          "eq": 8.88,
+          "risk": 40.1,
+          "opp": 39.9,
+          "sleeve": 0.713175,
+          "quality": 86.9,
+          "value": 33.5,
+          "income": null,
+          "flow": 12.5,
+          "mom": 55.0,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 0.8527
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "SNAP",
+          "score": 57.0,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 66.2,
+          "sleeve": 0.63275,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 0.8607,
+            "ma_crossover": 0.6703,
+            "volume_surge": 0.0,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "PGY",
+          "score": 56.97,
+          "dir": "bullish",
+          "eq": 48.2,
+          "risk": 56.7,
+          "opp": 70.9,
+          "sleeve": 0.67545,
+          "quality": 73.6,
+          "value": 92.0,
+          "income": null,
+          "flow": 34.0,
+          "mom": 48.9,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 0.7018
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "AMPL",
+          "score": 56.73,
+          "dir": "bullish",
+          "eq": 15.58,
+          "risk": 42.9,
+          "opp": 49.1,
+          "sleeve": 0.731425,
+          "quality": 50.0,
+          "value": 17.1,
+          "income": null,
+          "flow": 54.0,
+          "mom": 56.1,
+          "rev": 64.6,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.1143,
+            "trend_strength": 0.8114
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "IPWR",
+          "score": 56.58,
+          "dir": "bullish",
+          "eq": 23.19,
+          "risk": 58.5,
+          "opp": 51.6,
+          "sleeve": 0.736175,
+          "quality": 0.6,
+          "value": 0.0,
+          "income": null,
+          "flow": 53.1,
+          "mom": 54.5,
+          "rev": 47.6,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 0.0,
+            "volume_surge": 0.9447,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "PAYS",
+          "score": 56.3,
+          "dir": "bullish",
+          "eq": 28.16,
+          "risk": 34.9,
+          "opp": 57.4,
+          "sleeve": 0.75,
+          "quality": 100.0,
+          "value": 5.0,
+          "income": null,
+          "flow": 67.5,
+          "mom": 57.1,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "PCTY",
+          "score": 55.85,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 67.5,
+          "sleeve": 0.6940500000000001,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 0.7762,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "GDRX",
+          "score": 55.53,
+          "dir": "bullish",
+          "eq": 37.51,
+          "risk": 48.3,
+          "opp": 63.7,
+          "sleeve": 0.73565,
+          "quality": 56.3,
+          "value": 36.7,
+          "income": null,
+          "flow": 49.0,
+          "mom": 51.8,
+          "rev": 49.7,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 0.8406,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.102,
+            "trend_strength": 1.0
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "SMCI",
+          "score": 55.49,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 56.0,
+          "sleeve": 0.5786,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0137,
+            "trend_strength": 0.3007
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "PLTR",
+          "score": 55.31,
+          "dir": "bullish",
+          "eq": 33.12,
+          "risk": 32.2,
+          "opp": 61.0,
+          "sleeve": 0.719975,
+          "quality": 60.0,
+          "value": 12.7,
+          "income": null,
+          "flow": 27.0,
+          "mom": 52.0,
+          "rev": 78.5,
+          "tier": "enhanced",
+          "signals": {
+            "relative_strength": 1.0,
+            "ma_crossover": 1.0,
+            "volume_surge": 0.0,
+            "trend_strength": 0.8799
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 104,
+          "score": 31.5,
+          "dir": "neutral",
+          "sleeve": 0.4405,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 90,
+          "score": 37.65,
+          "dir": "bullish",
+          "sleeve": 0.489425,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 124,
+          "score": 27.47,
+          "dir": "bullish",
+          "sleeve": 0.36425,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 115,
+          "score": 29.33,
+          "dir": "bullish",
+          "sleeve": 0.33925,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 175,
+          "score": 18.39,
+          "dir": "bullish",
+          "sleeve": 0.163025,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 15,
+          "score": 55.31,
+          "dir": "bullish",
+          "sleeve": 0.719975,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 63,
+          "score": 45.62,
+          "dir": "bullish",
+          "sleeve": 0.5873,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 95,
+          "score": 35.16,
+          "dir": "bullish",
+          "sleeve": 0.5,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "value_fisher",
+      "n": 321,
+      "avg_score": 21.370591900311528,
+      "top_avg": 58.06933333333333,
+      "directions": {
+        "bullish": 182,
+        "neutral": 139
+      },
+      "avg_coverage": 38.61682242990654,
+      "sleeve_top": 0.7031383333333333,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.7031383333333333,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "PGY",
+          "score": 67.66,
+          "dir": "bullish",
+          "eq": 48.2,
+          "risk": 56.7,
+          "opp": 73.0,
+          "sleeve": 0.89395,
+          "quality": 73.6,
+          "value": 92.0,
+          "income": null,
+          "flow": 34.0,
+          "mom": 48.9,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 1.0,
+            "quality_factor": 0.7363,
+            "price_vs_target": 0.8395,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "SNAP",
+          "score": 66.1,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 66.0,
+          "sleeve": 0.787675,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.9866,
+            "quality_factor": 0.3,
+            "price_vs_target": 0.8641,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "MGTX",
+          "score": 65.93,
+          "dir": "bullish",
+          "eq": 36.44,
+          "risk": 38.1,
+          "opp": 68.1,
+          "sleeve": 0.810025,
+          "quality": 100.0,
+          "value": 70.1,
+          "income": null,
+          "flow": 75.0,
+          "mom": 47.3,
+          "rev": 66.9,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.402,
+            "quality_factor": 1.0,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 0.8381
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "DDD",
+          "score": 65.3,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 70.4,
+          "sleeve": 0.834525,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 1.0,
+            "quality_factor": 0.3381,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "BABA",
+          "score": 58.52,
+          "dir": "bullish",
+          "eq": 69.48,
+          "risk": 34.7,
+          "opp": 66.8,
+          "sleeve": 0.725075,
+          "quality": 62.8,
+          "value": 75.0,
+          "income": 30.0,
+          "flow": 7.5,
+          "mom": 38.0,
+          "rev": 63.1,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5,
+            "quality_factor": 0.6285,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 0.7718
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "SMCI",
+          "score": 57.03,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 52.2,
+          "sleeve": 0.6850999999999999,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.9731,
+            "quality_factor": 0.6082,
+            "price_vs_target": 0.1591,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "PCTY",
+          "score": 56.95,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 66.7,
+          "sleeve": 0.6244000000000001,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.549,
+            "quality_factor": 1.0,
+            "price_vs_target": 0.3919,
+            "estimate_momentum": 0.5567
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "ORCL",
+          "score": 56.95,
+          "dir": "bullish",
+          "eq": 36.96,
+          "risk": 57.2,
+          "opp": 63.2,
+          "sleeve": 0.652925,
+          "quality": 60.0,
+          "value": 75.5,
+          "income": 39.9,
+          "flow": 60.0,
+          "mom": 37.3,
+          "rev": 50.6,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5096,
+            "quality_factor": 0.6,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 0.5021
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "SBLK",
+          "score": 56.29,
+          "dir": "bullish",
+          "eq": 69.5,
+          "risk": 23.7,
+          "opp": 74.9,
+          "sleeve": 0.6407,
+          "quality": 76.5,
+          "value": 57.6,
+          "income": 85.3,
+          "flow": 60.0,
+          "mom": 40.0,
+          "rev": 56.8,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.8652,
+            "quality_factor": 0.7653,
+            "price_vs_target": 0.2866,
+            "estimate_momentum": 0.6457
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "ANET",
+          "score": 56.07,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 71.0,
+          "sleeve": 0.63515,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "quality_factor": 1.0,
+            "price_vs_target": 0.5406,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "SPCX",
+          "score": 54.97,
+          "dir": "bullish",
+          "eq": 46.14,
+          "risk": 50.3,
+          "opp": 64.1,
+          "sleeve": 0.75,
+          "quality": 100.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 50.0,
+          "mom": 26.8,
+          "rev": 75.6,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.0,
+            "quality_factor": 1.0,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "CRM",
+          "score": 54.72,
+          "dir": "bullish",
+          "eq": 52.94,
+          "risk": 39.2,
+          "opp": 69.2,
+          "sleeve": 0.625225,
+          "quality": 73.8,
+          "value": 63.1,
+          "income": 30.0,
+          "flow": 27.5,
+          "mom": 38.0,
+          "rev": 49.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.6741,
+            "quality_factor": 0.7382,
+            "price_vs_target": 0.5889,
+            "estimate_momentum": 0.4997
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "PAYC",
+          "score": 52.33,
+          "dir": "bullish",
+          "eq": 22.38,
+          "risk": 36.5,
+          "opp": 50.3,
+          "sleeve": 0.59765,
+          "quality": 80.0,
+          "value": 29.5,
+          "income": 30.0,
+          "flow": 61.5,
+          "mom": 57.1,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5906,
+            "quality_factor": 0.8,
+            "price_vs_target": 0.0,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "SATL",
+          "score": 51.79,
+          "dir": "bullish",
+          "eq": 17.23,
+          "risk": 65.3,
+          "opp": 45.4,
+          "sleeve": 0.65,
+          "quality": 60.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 55.0,
+          "mom": 49.2,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "quality_factor": 0.6,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "FIGS",
+          "score": 50.43,
+          "dir": "bullish",
+          "eq": 8.88,
+          "risk": 40.1,
+          "opp": 34.7,
+          "sleeve": 0.634675,
+          "quality": 86.9,
+          "value": 33.5,
+          "income": null,
+          "flow": 12.5,
+          "mom": 55.0,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "quality_factor": 0.869,
+            "price_vs_target": 0.6697,
+            "estimate_momentum": 1.0
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 143,
+          "score": 28.94,
+          "dir": "neutral",
+          "sleeve": 0.3059,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 162,
+          "score": 24.4,
+          "dir": "bullish",
+          "sleeve": 0.143875,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 85,
+          "score": 35.58,
+          "dir": "bullish",
+          "sleeve": 0.39187500000000003,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 134,
+          "score": 30.28,
+          "dir": "bullish",
+          "sleeve": 0.375,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 135,
+          "score": 30.23,
+          "dir": "bullish",
+          "sleeve": 0.36285,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 45,
+          "score": 41.64,
+          "dir": "bullish",
+          "sleeve": 0.46335,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 110,
+          "score": 33.31,
+          "dir": "bullish",
+          "sleeve": 0.290875,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 140,
+          "score": 29.69,
+          "dir": "bullish",
+          "sleeve": 0.3117,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "earnings_play",
+      "n": 321,
+      "avg_score": 20.382056074766354,
+      "top_avg": 53.176,
+      "directions": {
+        "bullish": 183,
+        "neutral": 138
+      },
+      "avg_coverage": 36.638629283489095,
+      "sleeve_top": 0.5341311111111111,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.5341311111111111,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "DDD",
+          "score": 58.49,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 67.4,
+          "sleeve": 0.5333333333333333,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 1.0,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.2
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "SNAP",
+          "score": 57.78,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 62.2,
+          "sleeve": 0.4666666666666667,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 1.0,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.0
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "BABA",
+          "score": 57.12,
+          "dir": "bullish",
+          "eq": 69.48,
+          "risk": 34.7,
+          "opp": 66.7,
+          "sleeve": 0.7072666666666667,
+          "quality": 62.8,
+          "value": 75.0,
+          "income": 30.0,
+          "flow": 7.5,
+          "mom": 38.0,
+          "rev": 63.1,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.7718,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.95
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "ANET",
+          "score": 55.39,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 71.1,
+          "sleeve": 0.4666666666666667,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 1.0,
+            "pead_drift": null,
+            "options_sentiment": 0.2,
+            "earnings_proximity": 0.2
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "PONY",
+          "score": 54.34,
+          "dir": "bullish",
+          "eq": 56.69,
+          "risk": 58.6,
+          "opp": 71.5,
+          "sleeve": 0.6333333333333333,
+          "quality": 15.8,
+          "value": 50.0,
+          "income": null,
+          "flow": 15.0,
+          "mom": 47.2,
+          "rev": 50.0,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.5,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 1.0
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "PGY",
+          "score": 54.0,
+          "dir": "bullish",
+          "eq": 48.2,
+          "risk": 56.7,
+          "opp": 66.5,
+          "sleeve": 0.4,
+          "quality": 73.6,
+          "value": 92.0,
+          "income": null,
+          "flow": 34.0,
+          "mom": 48.9,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 1.0,
+            "pead_drift": null,
+            "options_sentiment": 0.2,
+            "earnings_proximity": 0.0
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "ORCL",
+          "score": 53.46,
+          "dir": "bullish",
+          "eq": 36.96,
+          "risk": 57.2,
+          "opp": 63.3,
+          "sleeve": 0.5673666666666667,
+          "quality": 60.0,
+          "value": 75.5,
+          "income": 39.9,
+          "flow": 60.0,
+          "mom": 37.3,
+          "rev": 50.6,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.5021,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.8
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "FIGS",
+          "score": 53.41,
+          "dir": "bullish",
+          "eq": 8.88,
+          "risk": 40.1,
+          "opp": 36.4,
+          "sleeve": 0.5333333333333333,
+          "quality": 86.9,
+          "value": 33.5,
+          "income": null,
+          "flow": 12.5,
+          "mom": 55.0,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 1.0,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.2
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "MGTX",
+          "score": 51.99,
+          "dir": "bullish",
+          "eq": 36.44,
+          "risk": 38.1,
+          "opp": 60.7,
+          "sleeve": 0.27936666666666665,
+          "quality": 100.0,
+          "value": 70.1,
+          "income": null,
+          "flow": 75.0,
+          "mom": 47.3,
+          "rev": 66.9,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.8381,
+            "pead_drift": null,
+            "options_sentiment": 0.0,
+            "earnings_proximity": 0.0
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "KLAR",
+          "score": 50.54,
+          "dir": "bullish",
+          "eq": 44.34,
+          "risk": 54.9,
+          "opp": 63.4,
+          "sleeve": 0.6418333333333334,
+          "quality": 35.5,
+          "value": 30.5,
+          "income": null,
+          "flow": 54.0,
+          "mom": 38.0,
+          "rev": 61.3,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.7255,
+            "pead_drift": null,
+            "options_sentiment": 0.2,
+            "earnings_proximity": 1.0
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "PATH",
+          "score": 50.49,
+          "dir": "bullish",
+          "eq": 20.67,
+          "risk": 38.2,
+          "opp": 49.9,
+          "sleeve": 0.6055666666666667,
+          "quality": 57.3,
+          "value": 16.9,
+          "income": null,
+          "flow": 67.5,
+          "mom": 48.2,
+          "rev": 51.0,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.5,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.9167
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "SMCI",
+          "score": 50.45,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 50.0,
+          "sleeve": 0.4666666666666667,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 1.0,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.0
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "TGT",
+          "score": 50.09,
+          "dir": "bullish",
+          "eq": 25.4,
+          "risk": 25.4,
+          "opp": 40.0,
+          "sleeve": 0.6899666666666667,
+          "quality": 62.5,
+          "value": 13.9,
+          "income": 73.3,
+          "flow": 27.5,
+          "mom": 50.8,
+          "rev": 58.5,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.6699,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 1.0
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "P",
+          "score": 50.07,
+          "dir": "bullish",
+          "eq": 10.84,
+          "risk": 36.6,
+          "opp": 41.8,
+          "sleeve": 0.6350333333333333,
+          "quality": 73.7,
+          "value": 0.0,
+          "income": null,
+          "flow": 20.0,
+          "mom": 59.4,
+          "rev": 51.7,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.5051,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 1.0
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "PCTY",
+          "score": 50.02,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 63.2,
+          "sleeve": 0.38556666666666667,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "estimate_momentum": 0.5567,
+            "pead_drift": null,
+            "options_sentiment": 0.4,
+            "earnings_proximity": 0.2
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 146,
+          "score": 24.46,
+          "dir": "neutral",
+          "sleeve": 0.0,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 133,
+          "score": 26.49,
+          "dir": "bullish",
+          "sleeve": 0.06666666666666667,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 100,
+          "score": 32.22,
+          "dir": "bullish",
+          "sleeve": 0.27105,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 162,
+          "score": 21.16,
+          "dir": "bullish",
+          "sleeve": 0.0,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 160,
+          "score": 21.49,
+          "dir": "bullish",
+          "sleeve": 0.059675,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 27,
+          "score": 46.31,
+          "dir": "bullish",
+          "sleeve": 0.4,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 86,
+          "score": 33.92,
+          "dir": "bullish",
+          "sleeve": 0.06666666666666667,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 136,
+          "score": 26.02,
+          "dir": "bullish",
+          "sleeve": 0.0,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "smart_money_tracker",
+      "n": 321,
+      "avg_score": 17.39221183800623,
+      "top_avg": 49.94866666666667,
+      "directions": {
+        "bullish": 183,
+        "neutral": 138
+      },
+      "avg_coverage": 33.86604361370716,
+      "sleeve_top": 0.5046666666666667,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.5046666666666667,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "SNAP",
+          "score": 58.13,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 62.5,
+          "sleeve": 0.6333333333333333,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.5,
+            "options_sentiment": 0.4,
+            "insider_buying": 1.0
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "ANET",
+          "score": 56.19,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 71.7,
+          "sleeve": 0.6066666666666667,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.62,
+            "options_sentiment": 0.2,
+            "insider_buying": 1.0
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "SMCI",
+          "score": 53.83,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 51.3,
+          "sleeve": 0.54,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.62,
+            "options_sentiment": 0.4,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "PATH",
+          "score": 53.47,
+          "dir": "bullish",
+          "eq": 20.67,
+          "risk": 38.2,
+          "opp": 51.1,
+          "sleeve": 0.5833333333333334,
+          "quality": 57.3,
+          "value": 16.9,
+          "income": null,
+          "flow": 67.5,
+          "mom": 48.2,
+          "rev": 51.0,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.75,
+            "options_sentiment": 0.4,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "MGTX",
+          "score": 51.86,
+          "dir": "bullish",
+          "eq": 36.44,
+          "risk": 38.1,
+          "opp": 60.8,
+          "sleeve": 0.5,
+          "quality": 100.0,
+          "value": 70.1,
+          "income": null,
+          "flow": 75.0,
+          "mom": 47.3,
+          "rev": 66.9,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.5,
+            "options_sentiment": 0.0,
+            "insider_buying": 1.0
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "PCTY",
+          "score": 51.12,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 64.1,
+          "sleeve": 0.5766666666666667,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.33,
+            "options_sentiment": 0.4,
+            "insider_buying": 1.0
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "BKSY",
+          "score": 48.82,
+          "dir": "bullish",
+          "eq": 21.23,
+          "risk": 68.1,
+          "opp": 47.3,
+          "sleeve": 0.49333333333333335,
+          "quality": 40.0,
+          "value": 30.3,
+          "income": null,
+          "flow": 54.0,
+          "mom": 50.5,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.48,
+            "options_sentiment": 0.4,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "PAYC",
+          "score": 48.55,
+          "dir": "bullish",
+          "eq": 22.38,
+          "risk": 36.5,
+          "opp": 48.9,
+          "sleeve": 0.41,
+          "quality": 80.0,
+          "value": 29.5,
+          "income": 30.0,
+          "flow": 61.5,
+          "mom": 57.1,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.63,
+            "options_sentiment": 0.0,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "TOST",
+          "score": 48.53,
+          "dir": "bullish",
+          "eq": 51.83,
+          "risk": 38.6,
+          "opp": 64.7,
+          "sleeve": 0.4766666666666667,
+          "quality": 76.8,
+          "value": 31.4,
+          "income": null,
+          "flow": 61.5,
+          "mom": 45.9,
+          "rev": 56.8,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.63,
+            "options_sentiment": 0.2,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "DDD",
+          "score": 47.48,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 61.4,
+          "sleeve": 0.22333333333333336,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.27,
+            "options_sentiment": 0.4,
+            "insider_buying": 0.0
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "ORCL",
+          "score": 46.67,
+          "dir": "bullish",
+          "eq": 36.96,
+          "risk": 57.2,
+          "opp": 59.5,
+          "sleeve": 0.5333333333333333,
+          "quality": 60.0,
+          "value": 75.5,
+          "income": 39.9,
+          "flow": 60.0,
+          "mom": 37.3,
+          "rev": 50.6,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.2,
+            "options_sentiment": 0.4,
+            "insider_buying": 1.0
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "CRWV",
+          "score": 46.32,
+          "dir": "bullish",
+          "eq": 26.74,
+          "risk": 68.6,
+          "opp": 52.4,
+          "sleeve": 0.6066666666666667,
+          "quality": 30.0,
+          "value": 49.7,
+          "income": null,
+          "flow": 81.0,
+          "mom": 37.2,
+          "rev": 25.5,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.62,
+            "options_sentiment": 0.2,
+            "insider_buying": 1.0
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "GDRX",
+          "score": 46.23,
+          "dir": "bullish",
+          "eq": 37.51,
+          "risk": 48.3,
+          "opp": 58.9,
+          "sleeve": 0.46,
+          "quality": 56.3,
+          "value": 36.7,
+          "income": null,
+          "flow": 49.0,
+          "mom": 51.8,
+          "rev": 49.7,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.38,
+            "options_sentiment": 0.4,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "ACHR",
+          "score": 46.13,
+          "dir": "bullish",
+          "eq": 26.18,
+          "risk": 54.9,
+          "opp": 49.2,
+          "sleeve": 0.5,
+          "quality": 14.5,
+          "value": 50.0,
+          "income": null,
+          "flow": 55.0,
+          "mom": 43.7,
+          "rev": 24.5,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.5,
+            "options_sentiment": 0.4,
+            "insider_buying": 0.6
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "AMPL",
+          "score": 45.9,
+          "dir": "bullish",
+          "eq": 15.58,
+          "risk": 42.9,
+          "opp": 43.3,
+          "sleeve": 0.42666666666666664,
+          "quality": 50.0,
+          "value": 17.1,
+          "income": null,
+          "flow": 54.0,
+          "mom": 56.1,
+          "rev": 64.6,
+          "tier": "enhanced",
+          "signals": {
+            "smart_money": 0.48,
+            "options_sentiment": 0.2,
+            "insider_buying": 0.6
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 120,
+          "score": 21.01,
+          "dir": "neutral",
+          "sleeve": 0.04,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 68,
+          "score": 33.68,
+          "dir": "bullish",
+          "sleeve": 0.3933333333333333,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 137,
+          "score": 19.15,
+          "dir": "bullish",
+          "sleeve": 0.0,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 145,
+          "score": 18.27,
+          "dir": "bullish",
+          "sleeve": 0.0,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 115,
+          "score": 21.91,
+          "dir": "bullish",
+          "sleeve": 0.3333333333333333,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 31,
+          "score": 40.56,
+          "dir": "bullish",
+          "sleeve": 0.18000000000000002,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 41,
+          "score": 38.76,
+          "dir": "bullish",
+          "sleeve": 0.37666666666666665,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 122,
+          "score": 20.75,
+          "dir": "bullish",
+          "sleeve": 0.0,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "short_squeeze",
+      "n": 321,
+      "avg_score": 16.083956386292837,
+      "top_avg": 46.39666666666667,
+      "directions": {
+        "bullish": 194,
+        "neutral": 127
+      },
+      "avg_coverage": 33.205607476635514,
+      "sleeve_top": 0.5686088888888889,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.5686088888888889,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "UMAC",
+          "score": 59.81,
+          "dir": "bullish",
+          "eq": 18.73,
+          "risk": 49.1,
+          "opp": 40.5,
+          "sleeve": 0.7693333333333333,
+          "quality": 34.8,
+          "value": 13.5,
+          "income": null,
+          "flow": 46.0,
+          "mom": 62.7,
+          "rev": 25.0,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.908,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "IPWR",
+          "score": 58.39,
+          "dir": "bullish",
+          "eq": 23.19,
+          "risk": 58.5,
+          "opp": 48.7,
+          "sleeve": 0.7815666666666666,
+          "quality": 0.6,
+          "value": 0.0,
+          "income": null,
+          "flow": 53.1,
+          "mom": 54.5,
+          "rev": 47.6,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.9447,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "AEYE",
+          "score": 58.05,
+          "dir": "bullish",
+          "eq": 9.53,
+          "risk": 93.1,
+          "opp": 40.1,
+          "sleeve": 0.7225,
+          "quality": null,
+          "value": 48.9,
+          "income": null,
+          "flow": 0.0,
+          "mom": 53.2,
+          "rev": 61.6,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 1.0,
+            "options_sentiment": 0.4,
+            "relative_strength": 0.7675,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "ZIM",
+          "score": 49.17,
+          "dir": "bullish",
+          "eq": 28.18,
+          "risk": 35.5,
+          "opp": 48.5,
+          "sleeve": 0.6064,
+          "quality": 30.0,
+          "value": 25.1,
+          "income": 71.2,
+          "flow": 6.0,
+          "mom": 44.9,
+          "rev": 51.0,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.6828,
+            "options_sentiment": 0.4,
+            "relative_strength": 0.7364,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "RCAT",
+          "score": 44.58,
+          "dir": "bullish",
+          "eq": 18.74,
+          "risk": 53.5,
+          "opp": 44.0,
+          "sleeve": 0.6123333333333334,
+          "quality": 5.9,
+          "value": 50.0,
+          "income": null,
+          "flow": 41.5,
+          "mom": 49.5,
+          "rev": 25.0,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.437,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "INDI",
+          "score": 44.45,
+          "dir": "bullish",
+          "eq": 23.27,
+          "risk": 68.7,
+          "opp": 48.0,
+          "sleeve": 0.6069333333333333,
+          "quality": 0.0,
+          "value": 39.4,
+          "income": null,
+          "flow": 12.5,
+          "mom": 47.3,
+          "rev": 25.0,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.4585,
+            "options_sentiment": 0.4,
+            "relative_strength": 0.9623,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "DDD",
+          "score": 43.93,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 66.5,
+          "sleeve": 0.4666666666666667,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.0,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "P",
+          "score": 43.88,
+          "dir": "bullish",
+          "eq": 10.84,
+          "risk": 36.6,
+          "opp": 42.7,
+          "sleeve": 0.5198666666666667,
+          "quality": 73.7,
+          "value": 0.0,
+          "income": null,
+          "flow": 20.0,
+          "mom": 59.4,
+          "rev": 51.7,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.1596,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "SNAP",
+          "score": 43.33,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 61.6,
+          "sleeve": 0.42023333333333335,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.0,
+            "options_sentiment": 0.4,
+            "relative_strength": 0.8607,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "SMCI",
+          "score": 42.56,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 52.0,
+          "sleeve": 0.47123333333333334,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.0137,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "LPTH",
+          "score": 42.19,
+          "dir": "bullish",
+          "eq": 28.4,
+          "risk": 48.3,
+          "opp": 51.5,
+          "sleeve": 0.6502333333333333,
+          "quality": 32.1,
+          "value": 5.0,
+          "income": null,
+          "flow": 12.5,
+          "mom": 31.8,
+          "rev": 51.4,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.5507,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "PATH",
+          "score": 41.88,
+          "dir": "bullish",
+          "eq": 20.67,
+          "risk": 38.2,
+          "opp": 51.6,
+          "sleeve": 0.4666666666666667,
+          "quality": 57.3,
+          "value": 16.9,
+          "income": null,
+          "flow": 67.5,
+          "mom": 48.2,
+          "rev": 51.0,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.0,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "GDRX",
+          "score": 41.61,
+          "dir": "bullish",
+          "eq": 37.51,
+          "risk": 48.3,
+          "opp": 61.1,
+          "sleeve": 0.44753333333333334,
+          "quality": 56.3,
+          "value": 36.7,
+          "income": null,
+          "flow": 49.0,
+          "mom": 51.8,
+          "rev": 49.7,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.102,
+            "options_sentiment": 0.4,
+            "relative_strength": 0.8406,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "KTOS",
+          "score": 41.13,
+          "dir": "bullish",
+          "eq": 26.75,
+          "risk": 68.2,
+          "opp": 48.6,
+          "sleeve": 0.5338333333333334,
+          "quality": null,
+          "value": 0.0,
+          "income": null,
+          "flow": 0.0,
+          "mom": 57.0,
+          "rev": 50.6,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.2015,
+            "options_sentiment": 0.4,
+            "relative_strength": 1.0,
+            "residual_momentum_12_1": null
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "DOCU",
+          "score": 40.99,
+          "dir": "bullish",
+          "eq": 39.18,
+          "risk": 34.5,
+          "opp": 60.6,
+          "sleeve": 0.4538,
+          "quality": 91.1,
+          "value": 28.7,
+          "income": null,
+          "flow": 12.5,
+          "mom": 43.0,
+          "rev": 49.5,
+          "tier": "enhanced",
+          "signals": {
+            "volume_surge": 0.1591,
+            "options_sentiment": 0.4,
+            "relative_strength": 0.8023,
+            "residual_momentum_12_1": null
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 115,
+          "score": 18.91,
+          "dir": "neutral",
+          "sleeve": 0.27899999999999997,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 82,
+          "score": 27.29,
+          "dir": "bullish",
+          "sleeve": 0.3859,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 124,
+          "score": 17.46,
+          "dir": "bullish",
+          "sleeve": 0.15233333333333335,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 104,
+          "score": 21.58,
+          "dir": "bullish",
+          "sleeve": 0.37966666666666665,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 165,
+          "score": 12.8,
+          "dir": "bullish",
+          "sleeve": 0.14556666666666665,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 54,
+          "score": 32.67,
+          "dir": "bullish",
+          "sleeve": 0.3333333333333333,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 26,
+          "score": 38.62,
+          "dir": "bullish",
+          "sleeve": 0.5319,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 105,
+          "score": 21.43,
+          "dir": "bullish",
+          "sleeve": 0.3333333333333333,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "quality_compounder",
+      "n": 321,
+      "avg_score": 24.76133956386293,
+      "top_avg": 62.849333333333334,
+      "directions": {
+        "bullish": 183,
+        "neutral": 138
+      },
+      "avg_coverage": 43.49844236760124,
+      "sleeve_top": 0.6642883333333334,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.6642883333333334,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "MGTX",
+          "score": 69.69,
+          "dir": "bullish",
+          "eq": 36.44,
+          "risk": 38.1,
+          "opp": 69.3,
+          "sleeve": 0.685025,
+          "quality": 100.0,
+          "value": 70.1,
+          "income": null,
+          "flow": 75.0,
+          "mom": 47.3,
+          "rev": 66.9,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 1.0,
+            "estimate_momentum": 0.8381,
+            "rating_momentum": 0.5,
+            "valuation_gap": 0.402
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "PGY",
+          "score": 68.86,
+          "dir": "bullish",
+          "eq": 48.2,
+          "risk": 56.7,
+          "opp": 73.1,
+          "sleeve": 0.8115749999999999,
+          "quality": 73.6,
+          "value": 92.0,
+          "income": null,
+          "flow": 34.0,
+          "mom": 48.9,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.7363,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.51,
+            "valuation_gap": 1.0
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "ANET",
+          "score": 68.19,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 76.7,
+          "sleeve": 0.63,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 1.0,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.52,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "SNAP",
+          "score": 64.76,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 64.3,
+          "sleeve": 0.69915,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.3,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.9866
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "PCTY",
+          "score": 63.86,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 69.4,
+          "sleeve": 0.653925,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 1.0,
+            "estimate_momentum": 0.5567,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.549
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "SPCX",
+          "score": 63.23,
+          "dir": "bullish",
+          "eq": 46.14,
+          "risk": 50.3,
+          "opp": 68.0,
+          "sleeve": 0.627975,
+          "quality": 100.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 50.0,
+          "mom": 26.8,
+          "rev": 75.6,
+          "tier": "tier2_aux",
+          "signals": {
+            "quality_factor": 1.0,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.5119,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "DDD",
+          "score": 63.1,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 68.3,
+          "sleeve": 0.709525,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.3381,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.5,
+            "valuation_gap": 1.0
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "PAYS",
+          "score": 62.49,
+          "dir": "bullish",
+          "eq": 28.16,
+          "risk": 34.9,
+          "opp": 58.1,
+          "sleeve": 0.654975,
+          "quality": 100.0,
+          "value": 5.0,
+          "income": null,
+          "flow": 67.5,
+          "mom": 57.1,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 1.0,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.52,
+            "valuation_gap": 0.0999
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "PAYC",
+          "score": 62.28,
+          "dir": "bullish",
+          "eq": 22.38,
+          "risk": 36.5,
+          "opp": 54.0,
+          "sleeve": 0.72515,
+          "quality": 80.0,
+          "value": 29.5,
+          "income": 30.0,
+          "flow": 61.5,
+          "mom": 57.1,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.8,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.5906
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "FIGS",
+          "score": 61.19,
+          "dir": "bullish",
+          "eq": 8.88,
+          "risk": 40.1,
+          "opp": 38.7,
+          "sleeve": 0.59475,
+          "quality": 86.9,
+          "value": 33.5,
+          "income": null,
+          "flow": 12.5,
+          "mom": 55.0,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.869,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "SMCI",
+          "score": 60.15,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 53.4,
+          "sleeve": 0.757825,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.6082,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.45,
+            "valuation_gap": 0.9731
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "SBLK",
+          "score": 59.89,
+          "dir": "bullish",
+          "eq": 69.5,
+          "risk": 23.7,
+          "opp": 77.6,
+          "sleeve": 0.69155,
+          "quality": 76.5,
+          "value": 57.6,
+          "income": 85.3,
+          "flow": 60.0,
+          "mom": 40.0,
+          "rev": 56.8,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.7653,
+            "estimate_momentum": 0.6457,
+            "rating_momentum": 0.49,
+            "valuation_gap": 0.8652
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "SATL",
+          "score": 59.23,
+          "dir": "bullish",
+          "eq": 17.23,
+          "risk": 65.3,
+          "opp": 48.1,
+          "sleeve": 0.525,
+          "quality": 60.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 55.0,
+          "mom": 49.2,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.6,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.5,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "BABA",
+          "score": 58.3,
+          "dir": "bullish",
+          "eq": 69.48,
+          "risk": 34.7,
+          "opp": 65.5,
+          "sleeve": 0.597575,
+          "quality": 62.8,
+          "value": 75.0,
+          "income": 30.0,
+          "flow": 7.5,
+          "mom": 38.0,
+          "rev": 63.1,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.6285,
+            "estimate_momentum": 0.7718,
+            "rating_momentum": 0.49,
+            "valuation_gap": 0.5
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "ANF",
+          "score": 57.52,
+          "dir": "bullish",
+          "eq": 66.1,
+          "risk": 39.2,
+          "opp": 67.1,
+          "sleeve": 0.600325,
+          "quality": 100.0,
+          "value": 27.4,
+          "income": null,
+          "flow": 27.5,
+          "mom": 43.2,
+          "rev": 53.6,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 1.0,
+            "estimate_momentum": 0.5814,
+            "rating_momentum": 0.49,
+            "valuation_gap": 0.3299
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 160,
+          "score": 29.85,
+          "dir": "neutral",
+          "sleeve": 0.1884,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 154,
+          "score": 30.81,
+          "dir": "bullish",
+          "sleeve": 0.19282500000000002,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 127,
+          "score": 35.5,
+          "dir": "bullish",
+          "sleeve": 0.261875,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 151,
+          "score": 31.33,
+          "dir": "bullish",
+          "sleeve": 0.25,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 149,
+          "score": 31.45,
+          "dir": "bullish",
+          "sleeve": 0.26289999999999997,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 23,
+          "score": 53.71,
+          "dir": "bullish",
+          "sleeve": 0.5425,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 131,
+          "score": 34.95,
+          "dir": "bullish",
+          "sleeve": 0.163375,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 150,
+          "score": 31.44,
+          "dir": "bullish",
+          "sleeve": 0.1824,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "long_horizon_12to36m",
+      "n": 321,
+      "avg_score": 23.275420560747662,
+      "top_avg": 62.682,
+      "directions": {
+        "bullish": 182,
+        "neutral": 139
+      },
+      "avg_coverage": 41.14330218068536,
+      "sleeve_top": 0.6596283333333334,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.6596283333333334,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "PGY",
+          "score": 73.17,
+          "dir": "bullish",
+          "eq": 48.2,
+          "risk": 56.7,
+          "opp": 74.7,
+          "sleeve": 0.8115749999999999,
+          "quality": 73.6,
+          "value": 92.0,
+          "income": null,
+          "flow": 34.0,
+          "mom": 48.9,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 1.0,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.7363,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "SNAP",
+          "score": 72.94,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 68.1,
+          "sleeve": 0.69915,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.9866,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.3,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "DDD",
+          "score": 70.78,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 71.6,
+          "sleeve": 0.709525,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 1.0,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.3381,
+            "rating_momentum": 0.5
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "MGTX",
+          "score": 68.98,
+          "dir": "bullish",
+          "eq": 36.44,
+          "risk": 38.1,
+          "opp": 68.5,
+          "sleeve": 0.685025,
+          "quality": 100.0,
+          "value": 70.1,
+          "income": null,
+          "flow": 75.0,
+          "mom": 47.3,
+          "rev": 66.9,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.402,
+            "estimate_momentum": 0.8381,
+            "quality_factor": 1.0,
+            "rating_momentum": 0.5
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "SMCI",
+          "score": 62.11,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 54.0,
+          "sleeve": 0.757825,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.9731,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.6082,
+            "rating_momentum": 0.45
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "SBLK",
+          "score": 61.99,
+          "dir": "bullish",
+          "eq": 69.5,
+          "risk": 23.7,
+          "opp": 78.2,
+          "sleeve": 0.69155,
+          "quality": 76.5,
+          "value": 57.6,
+          "income": 85.3,
+          "flow": 60.0,
+          "mom": 40.0,
+          "rev": 56.8,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.8652,
+            "estimate_momentum": 0.6457,
+            "quality_factor": 0.7653,
+            "rating_momentum": 0.49
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "ANET",
+          "score": 61.79,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 72.3,
+          "sleeve": 0.63,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "estimate_momentum": 1.0,
+            "quality_factor": 1.0,
+            "rating_momentum": 0.52
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "PCTY",
+          "score": 61.54,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 67.4,
+          "sleeve": 0.653925,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.549,
+            "estimate_momentum": 0.5567,
+            "quality_factor": 1.0,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "SPCX",
+          "score": 60.18,
+          "dir": "bullish",
+          "eq": 46.14,
+          "risk": 50.3,
+          "opp": 65.1,
+          "sleeve": 0.627975,
+          "quality": 100.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 50.0,
+          "mom": 26.8,
+          "rev": 75.6,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.0,
+            "estimate_momentum": 1.0,
+            "quality_factor": 1.0,
+            "rating_momentum": 0.5119
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "ORCL",
+          "score": 59.68,
+          "dir": "bullish",
+          "eq": 36.96,
+          "risk": 57.2,
+          "opp": 63.0,
+          "sleeve": 0.530425,
+          "quality": 60.0,
+          "value": 75.5,
+          "income": 39.9,
+          "flow": 60.0,
+          "mom": 37.3,
+          "rev": 50.6,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5096,
+            "estimate_momentum": 0.5021,
+            "quality_factor": 0.6,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "PAYC",
+          "score": 59.67,
+          "dir": "bullish",
+          "eq": 22.38,
+          "risk": 36.5,
+          "opp": 52.2,
+          "sleeve": 0.72515,
+          "quality": 80.0,
+          "value": 29.5,
+          "income": 30.0,
+          "flow": 61.5,
+          "mom": 57.1,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5906,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.8,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "BABA",
+          "score": 59.49,
+          "dir": "bullish",
+          "eq": 69.48,
+          "risk": 34.7,
+          "opp": 65.5,
+          "sleeve": 0.597575,
+          "quality": 62.8,
+          "value": 75.0,
+          "income": 30.0,
+          "flow": 7.5,
+          "mom": 38.0,
+          "rev": 63.1,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5,
+            "estimate_momentum": 0.7718,
+            "quality_factor": 0.6285,
+            "rating_momentum": 0.49
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "SATL",
+          "score": 58.11,
+          "dir": "bullish",
+          "eq": 17.23,
+          "risk": 65.3,
+          "opp": 46.7,
+          "sleeve": 0.525,
+          "quality": 60.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 55.0,
+          "mom": 49.2,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.6,
+            "rating_momentum": 0.5
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "FIGS",
+          "score": 55.23,
+          "dir": "bullish",
+          "eq": 8.88,
+          "risk": 40.1,
+          "opp": 35.5,
+          "sleeve": 0.59475,
+          "quality": 86.9,
+          "value": 33.5,
+          "income": null,
+          "flow": 12.5,
+          "mom": 55.0,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.869,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "PAYS",
+          "score": 54.57,
+          "dir": "bullish",
+          "eq": 28.16,
+          "risk": 34.9,
+          "opp": 53.6,
+          "sleeve": 0.654975,
+          "quality": 100.0,
+          "value": 5.0,
+          "income": null,
+          "flow": 67.5,
+          "mom": 57.1,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0999,
+            "estimate_momentum": 1.0,
+            "quality_factor": 1.0,
+            "rating_momentum": 0.52
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 138,
+          "score": 32.23,
+          "dir": "neutral",
+          "sleeve": 0.1884,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 153,
+          "score": 29.54,
+          "dir": "bullish",
+          "sleeve": 0.19282500000000002,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 110,
+          "score": 36.15,
+          "dir": "bullish",
+          "sleeve": 0.261875,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 146,
+          "score": 30.96,
+          "dir": "bullish",
+          "sleeve": 0.25,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 137,
+          "score": 32.34,
+          "dir": "bullish",
+          "sleeve": 0.26289999999999997,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 28,
+          "score": 48.4,
+          "dir": "bullish",
+          "sleeve": 0.5425,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 98,
+          "score": 37.33,
+          "dir": "bullish",
+          "sleeve": 0.163375,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 132,
+          "score": 33.63,
+          "dir": "bullish",
+          "sleeve": 0.1824,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    },
+    {
+      "preset": "dividend_income",
+      "n": 321,
+      "avg_score": 23.453738317757008,
+      "top_avg": 60.892,
+      "directions": {
+        "bullish": 186,
+        "neutral": 135
+      },
+      "avg_coverage": 35.96261682242991,
+      "sleeve_top": 0.6623855555555556,
+      "sleeve_bottom": 0.0,
+      "sleeve_spread": 0.6623855555555556,
+      "top15": [
+        {
+          "rank": 1,
+          "ticker": "PGY",
+          "score": 69.22,
+          "dir": "bullish",
+          "eq": 48.2,
+          "risk": 56.7,
+          "opp": 73.5,
+          "sleeve": 0.86815,
+          "quality": 73.6,
+          "value": 92.0,
+          "income": null,
+          "flow": 34.0,
+          "mom": 48.9,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 0.7363,
+            "valuation_gap": 1.0
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "MGTX",
+          "score": 68.51,
+          "dir": "bullish",
+          "eq": 36.44,
+          "risk": 38.1,
+          "opp": 69.3,
+          "sleeve": 0.7010000000000001,
+          "quality": 100.0,
+          "value": 70.1,
+          "income": null,
+          "flow": 75.0,
+          "mom": 47.3,
+          "rev": 66.9,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.402
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "SBLK",
+          "score": 67.21,
+          "dir": "bullish",
+          "eq": 69.5,
+          "risk": 23.7,
+          "opp": 83.1,
+          "sleeve": 0.8278333333333333,
+          "quality": 76.5,
+          "value": 57.6,
+          "income": 85.3,
+          "flow": 60.0,
+          "mom": 40.0,
+          "rev": 56.8,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": 0.853,
+            "quality_factor": 0.7653,
+            "valuation_gap": 0.8652
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "SNAP",
+          "score": 66.49,
+          "dir": "bullish",
+          "eq": 52.79,
+          "risk": 54.7,
+          "opp": 65.7,
+          "sleeve": 0.6433,
+          "quality": 30.0,
+          "value": 92.5,
+          "income": null,
+          "flow": 75.0,
+          "mom": 43.7,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 0.3,
+            "valuation_gap": 0.9866
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "DDD",
+          "score": 63.95,
+          "dir": "bullish",
+          "eq": 44.8,
+          "risk": 60.2,
+          "opp": 68.8,
+          "sleeve": 0.66905,
+          "quality": 33.8,
+          "value": 100.0,
+          "income": null,
+          "flow": 13.5,
+          "mom": 56.0,
+          "rev": 75.0,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 0.3381,
+            "valuation_gap": 1.0
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "PCTY",
+          "score": 63.5,
+          "dir": "bullish",
+          "eq": 47.51,
+          "risk": 30.1,
+          "opp": 69.2,
+          "sleeve": 0.7745,
+          "quality": 100.0,
+          "value": 47.0,
+          "income": null,
+          "flow": 66.5,
+          "mom": 48.8,
+          "rev": 53.3,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.549
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "ANET",
+          "score": 62.25,
+          "dir": "bullish",
+          "eq": 55.82,
+          "risk": 33.7,
+          "opp": 73.4,
+          "sleeve": 0.5,
+          "quality": 100.0,
+          "value": 27.0,
+          "income": null,
+          "flow": 81.0,
+          "mom": 47.3,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "MU",
+          "score": 59.06,
+          "dir": "bullish",
+          "eq": 73.6,
+          "risk": 37.8,
+          "opp": 82.1,
+          "sleeve": 0.6666666666666666,
+          "quality": 100.0,
+          "value": 50.0,
+          "income": 100.0,
+          "flow": 0.0,
+          "mom": 14.6,
+          "rev": 50.2,
+          "tier": "tier2_aux",
+          "signals": {
+            "income_factor": 1.0,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "SMCI",
+          "score": 58.45,
+          "dir": "bullish",
+          "eq": 20.53,
+          "risk": 50.1,
+          "opp": 52.9,
+          "sleeve": 0.79065,
+          "quality": 60.8,
+          "value": 56.6,
+          "income": null,
+          "flow": 61.0,
+          "mom": 43.5,
+          "rev": 72.5,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 0.6082,
+            "valuation_gap": 0.9731
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "SPCX",
+          "score": 57.99,
+          "dir": "bullish",
+          "eq": 46.14,
+          "risk": 50.3,
+          "opp": 65.7,
+          "sleeve": 0.5,
+          "quality": 100.0,
+          "value": 50.0,
+          "income": null,
+          "flow": 50.0,
+          "mom": 26.8,
+          "rev": 75.6,
+          "tier": "tier2_aux",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.0
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "RIO",
+          "score": 57.84,
+          "dir": "bullish",
+          "eq": 68.49,
+          "risk": 21.0,
+          "opp": 71.2,
+          "sleeve": 0.6904,
+          "quality": 78.0,
+          "value": 28.8,
+          "income": 98.1,
+          "flow": 15.0,
+          "mom": 29.5,
+          "rev": 46.0,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": 0.9813,
+            "quality_factor": 0.7803,
+            "valuation_gap": 0.3096
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "SBSW",
+          "score": 55.4,
+          "dir": "bullish",
+          "eq": 18.54,
+          "risk": 50.3,
+          "opp": 45.5,
+          "sleeve": 0.6548333333333334,
+          "quality": 24.6,
+          "value": 76.9,
+          "income": 71.9,
+          "flow": 0.0,
+          "mom": 53.3,
+          "rev": 45.5,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": 0.7187,
+            "quality_factor": 0.2458,
+            "valuation_gap": 1.0
+          }
+        },
+        {
+          "rank": 13,
+          "ticker": "PAYS",
+          "score": 54.9,
+          "dir": "bullish",
+          "eq": 28.16,
+          "risk": 34.9,
+          "opp": 54.3,
+          "sleeve": 0.54995,
+          "quality": 100.0,
+          "value": 5.0,
+          "income": null,
+          "flow": 67.5,
+          "mom": 57.1,
+          "rev": 76.0,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.0999
+          }
+        },
+        {
+          "rank": 14,
+          "ticker": "ANF",
+          "score": 54.76,
+          "dir": "bullish",
+          "eq": 66.1,
+          "risk": 39.2,
+          "opp": 63.9,
+          "sleeve": 0.66495,
+          "quality": 100.0,
+          "value": 27.4,
+          "income": null,
+          "flow": 27.5,
+          "mom": 43.2,
+          "rev": 53.6,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 1.0,
+            "valuation_gap": 0.3299
+          }
+        },
+        {
+          "rank": 15,
+          "ticker": "FIGS",
+          "score": 53.85,
+          "dir": "bullish",
+          "eq": 8.88,
+          "risk": 40.1,
+          "opp": 35.4,
+          "sleeve": 0.4345,
+          "quality": 86.9,
+          "value": 33.5,
+          "income": null,
+          "flow": 12.5,
+          "mom": 55.0,
+          "rev": 75.5,
+          "tier": "enhanced",
+          "signals": {
+            "income_factor": null,
+            "quality_factor": 0.869,
+            "valuation_gap": 0.0
+          }
+        }
+      ],
+      "thesis": {
+        "RKLB": {
+          "rank": 156,
+          "score": 29.22,
+          "dir": "neutral",
+          "sleeve": 0.1118,
+          "tier": "enhanced"
+        },
+        "ASTS": {
+          "rank": 154,
+          "score": 29.32,
+          "dir": "bullish",
+          "sleeve": 0.15565,
+          "tier": "enhanced"
+        },
+        "PL": {
+          "rank": 112,
+          "score": 35.31,
+          "dir": "bullish",
+          "sleeve": 0.2,
+          "tier": "tier2_aux"
+        },
+        "POET": {
+          "rank": 150,
+          "score": 29.91,
+          "dir": "bullish",
+          "sleeve": 0.25,
+          "tier": "tier2_aux"
+        },
+        "JOBY": {
+          "rank": 141,
+          "score": 31.2,
+          "dir": "bullish",
+          "sleeve": 0.17145,
+          "tier": "tier2_aux"
+        },
+        "PLTR": {
+          "rank": 44,
+          "score": 45.5,
+          "dir": "bullish",
+          "sleeve": 0.3,
+          "tier": "enhanced"
+        },
+        "LUNR": {
+          "rank": 109,
+          "score": 35.61,
+          "dir": "bullish",
+          "sleeve": 0.08175,
+          "tier": "enhanced"
+        },
+        "IONQ": {
+          "rank": 140,
+          "score": 31.43,
+          "dir": "bullish",
+          "sleeve": 0.1234,
+          "tier": "enhanced"
+        }
+      },
+      "signals": {
+        "relative_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 118,
+          "mean": 0.4195227414330218,
+          "p90": 1.0
+        },
+        "ma_crossover": {
+          "n": 321,
+          "none": 0,
+          "zero": 154,
+          "mean": 0.3103395638629283,
+          "p90": 1.0
+        },
+        "trend_strength": {
+          "n": 321,
+          "none": 0,
+          "zero": 119,
+          "mean": 0.38305140186915887,
+          "p90": 1.0
+        },
+        "volume_surge": {
+          "n": 321,
+          "none": 0,
+          "zero": 251,
+          "mean": 0.04255015576323987,
+          "p90": 0.12404
+        },
+        "quality_factor": {
+          "n": 179,
+          "none": 142,
+          "zero": 15,
+          "mean": 0.5327558659217877,
+          "p90": 1.0
+        },
+        "income_factor": {
+          "n": 64,
+          "none": 257,
+          "zero": 0,
+          "mean": 0.4680296875,
+          "p90": 0.726
+        },
+        "valuation_gap": {
+          "n": 321,
+          "none": 0,
+          "zero": 273,
+          "mean": 0.06344361370716511,
+          "p90": 0.23704
+        },
+        "estimate_momentum": {
+          "n": 300,
+          "none": 21,
+          "zero": 167,
+          "mean": 0.287526,
+          "p90": 1.0
+        },
+        "rating_momentum": {
+          "n": 310,
+          "none": 11,
+          "zero": 129,
+          "mean": 0.2940351612903226,
+          "p90": 0.5284599999999999
+        },
+        "pead_drift": {
+          "n": 226,
+          "none": 95,
+          "zero": 225,
+          "mean": 0.0022088495575221237,
+          "p90": 0.0
+        },
+        "options_sentiment": {
+          "n": 321,
+          "none": 0,
+          "zero": 261,
+          "mean": 0.06105919003115265,
+          "p90": 0.4
+        },
+        "smart_money": {
+          "n": 321,
+          "none": 0,
+          "zero": 232,
+          "mean": 0.1002570093457944,
+          "p90": 0.41600000000000004
+        },
+        "insider_buying": {
+          "n": 321,
+          "none": 0,
+          "zero": 253,
+          "mean": 0.16199376947040497,
+          "p90": 0.6
+        },
+        "earnings_proximity": {
+          "n": 321,
+          "none": 0,
+          "zero": 214,
+          "mean": 0.1468847352024922,
+          "p90": 0.74666
+        },
+        "price_vs_target": {
+          "n": 321,
+          "none": 0,
+          "zero": 166,
+          "mean": 0.28517258566978193,
+          "p90": 1.0
+        },
+        "weekly_trend_alignment": {
+          "n": 96,
+          "none": 225,
+          "zero": 0,
+          "mean": 0.6915625,
+          "p90": 0.8299999999999998
+        },
+        "residual_momentum_12_1": {
+          "n": 0,
+          "none": 321,
+          "zero": 0,
+          "mean": null,
+          "p90": null
+        }
+      }
+    }
+  ]
+}

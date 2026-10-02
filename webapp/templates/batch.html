@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Analysis - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Batch / Watchlist</h1>
+  <p class="page-subtitle">Run multi-ticker analysis</p>
+</div>
+
+<div class="two-col">
+  <!-- Input Form -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Batch Settings</h2>
+    </div>
+    <form id="batch-form">
+      <div class="form-group">
+        <label class="form-label" for="tickers">Tickers (comma-separated)</label>
+        <textarea id="tickers" name="tickers" class="form-input" rows="3"
+                  placeholder="AAPL, MSFT, GOOGL, AMZN" required
+                  style="text-transform: uppercase;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="date">Analysis Date</label>
+        <input type="date" id="date" name="date" class="form-input" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mode">Research Depth</label>
+        <select id="mode" name="mode" class="form-select">
+          <option value="quick">Quick (~1-2min each)</option>
+          <option value="standard" selected>Standard (~4-5min each)</option>
+          <option value="deep">Deep (~5-6min each)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="risk_profile">Risk Profile</label>
+        <select id="risk_profile" name="risk_profile" class="form-select">
+          <option value="aggressive">Aggressive (High Conviction)</option>
+          <option value="growth" selected>Growth (Balanced)</option>
+          <option value="conservative">Conservative (Cautious)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="investment_profile">Investment Profile</label>
+        <select id="investment_profile" name="investment_profile" class="form-select">
+          <option value="">Auto / Default</option>
+        </select>
+        <small style="color: var(--text-muted); margin-top: 4px; display: block;">
+          Auto resolves each ticker from cached sector, market-cap, profitability, and beta metadata. You can override it for the whole batch.
+        </small>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="delay">Delay Between (seconds)</label>
+        <input type="number" id="delay" name="delay" class="form-input" value="60" min="30" max="300">
+        <small class="form-hint" style="color: var(--text-muted); font-size: var(--text-xs); margin-top: 4px; display: block;">
+          Minimum 60s recommended to avoid API rate limits. Increase to 90s+ for large batches.
+        </small>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="snapshot_filter">Snapshot Filter</label>
+        <select id="snapshot_filter" name="snapshot_filter" class="form-select">
+          <option value="">All</option>
+          <option value="any">Any snapshot</option>
+          <option value="sec">SEC only</option>
+          <option value="transcript">Transcript only</option>
+          <option value="multi">Both snapshots</option>
+          <option value="none">No snapshots</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" id="run-btn">
+        📋 Run Batch
+      </button>
+    </form>
+  </div>
+
+  <!-- Results Panel -->
+  <div class="card" data-collapsible data-collapse-id="batch-results">
+    <div class="card-header">
+      <h2 class="card-title">Results</h2>
+    </div>
+    <div id="results-panel">
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">Ready for batch</div>
+        <p>Enter tickers and click Run Batch</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('date').valueAsDate = new Date();
+
+// Populate investment profile dropdown from API and auto-select from URL param
+(async function loadProfiles() {
+  try {
+    const res = await fetch('/api/investment-profiles');
+    if (!res.ok) return;
+    const profiles = await res.json();
+    const sel = document.getElementById('investment_profile');
+    for (const [key, info] of Object.entries(profiles)) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = info.display_name + ' — ' + info.company_context;
+      sel.appendChild(opt);
+    }
+    // Auto-select from URL param if provided
+    const urlParams = new URLSearchParams(window.location.search);
+    const profileParam = urlParams.get('investment_profile');
+    if (profileParam && profiles[profileParam]) {
+      sel.value = profileParam;
+    }
+  } catch (e) { console.warn('Could not load investment profiles:', e); }
+})();
+
+// Pre-fill tickers from URL query parameter (from Analyze page redirect)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const tickersParam = params.get('tickers');
+  if (tickersParam) {
+    document.getElementById('tickers').value = tickersParam;
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+})();
+
+// Handle batch job status updates
+function handleBatchJobStatus(job, tickers, runBtn, resultsPanel) {
+  if (job.status === 'queued' || job.status === 'running') {
+    const jobTickers = job.tickers || tickers;
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<span class="spinner"></span> Running...';
+    resultsPanel.innerHTML = `
+      <div class="loading">
+        <span class="spinner"></span>
+        Batch in progress (${Array.isArray(jobTickers) ? jobTickers.length : '?'} tickers)...
+      </div>
+    `;
+  } else if (job.status === 'completed') {
+    runBtn.disabled = false;
+    runBtn.innerHTML = '📋 Run Batch';
+    
+    const result = job.result;
+    resultsPanel.innerHTML = `
+      <div style="text-align: center; margin-bottom: var(--spacing-4);">
+        <div class="stat-value">${result.count} analyses completed</div>
+      </div>
+      <div class="quick-actions" style="justify-content: center;">
+        <a href="/history" class="btn btn-primary">View Results</a>
+      </div>
+    `;
+  } else if (job.status === 'failed') {
+    runBtn.disabled = false;
+    runBtn.innerHTML = '📋 Run Batch';
+    
+    resultsPanel.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">❌</div>
+        <div class="empty-state-title">Batch Failed</div>
+        <p style="color: var(--qa-red);">${job.error || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+// Check for and resume any active batch jobs on page load
+async function checkActiveBatchJobs() {
+  const activeJobs = await ActiveJobs.sync();
+  const batchJobs = activeJobs.filter(j => j.job_type === 'batch');
+  
+  if (batchJobs.length > 0) {
+    const job = batchJobs[0];
+    const runBtn = document.getElementById('run-btn');
+    const resultsPanel = document.getElementById('results-panel');
+    
+    // Pre-fill form with job details
+    if (job.tickers) document.getElementById('tickers').value = job.tickers.join(', ');
+    if (job.date) document.getElementById('date').value = job.date;
+    if (job.mode) document.getElementById('mode').value = job.mode;
+    if (job.risk_profile) document.getElementById('risk_profile').value = job.risk_profile;
+    
+    // Resume polling
+    pollJobStatus(job.job_id, function(updatedJob) {
+      handleBatchJobStatus(updatedJob, job.tickers, runBtn, resultsPanel);
+    }, 5000);
+  }
+}
+checkActiveBatchJobs();
+
+document.getElementById('batch-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const tickersRaw = document.getElementById('tickers').value;
+  // Split by comma, space, or newline
+  const tickers = tickersRaw.split(/[,\s\n]+/)
+    .map(t => t.trim().toUpperCase())
+    .filter(t => t.length > 0 && /^[A-Z0-9.\-]{1,8}$/.test(t));
+  
+  const date = document.getElementById('date').value;
+  const mode = document.getElementById('mode').value;
+  const risk_profile = document.getElementById('risk_profile').value;
+  const investment_profile = document.getElementById('investment_profile').value || null;
+  const delay = parseInt(document.getElementById('delay').value) || 60;
+  const snapshotFilter = document.getElementById('snapshot_filter').value || null;
+  
+  if (tickers.length === 0) {
+    alert('Please enter at least one valid ticker symbol (1-8 characters, letters/numbers only)');
+    return;
+  }
+  
+  // Show which tickers will be analyzed
+  console.log(`Batch analysis: ${tickers.length} tickers - ${tickers.join(', ')}`);
+  
+  // Warn if too many tickers
+  if (tickers.length > 10) {
+    const proceed = confirm(
+      `You're about to analyze ${tickers.length} tickers.\n\n` +
+      `This will take approximately ${Math.round(tickers.length * 5 + (tickers.length - 1) * delay / 60)} minutes.\n\n` +
+      `Continue?`
+    );
+    if (!proceed) return;
+  }
+  
+  const runBtn = document.getElementById('run-btn');
+  const resultsPanel = document.getElementById('results-panel');
+  
+  runBtn.disabled = true;
+  runBtn.innerHTML = '<span class="spinner"></span> Running...';
+  
+  const estimatedMinutes = Math.round(tickers.length * (mode === 'quick' ? 2 : mode === 'deep' ? 6 : 5) + (tickers.length - 1) * delay / 60);
+  resultsPanel.innerHTML = `
+    <div class="loading">
+      <span class="spinner"></span>
+      Running batch for ${tickers.length} tickers (${risk_profile} profile)...
+    </div>
+    <p style="text-align: center; color: var(--text-muted); margin-top: var(--spacing-4);">
+      Tickers: ${tickers.join(', ')}<br>
+      Delay: ${delay}s between each | Estimated time: ~${estimatedMinutes} minutes
+    </p>
+  `;
+  
+  fetch('/api/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tickers, date, mode, risk_profile, investment_profile, delay, snapshot_filter: snapshotFilter })
+  })
+  .then(res => {
+    if (!res.ok) return res.json().catch(() => ({})).then(err => { throw new Error(err.detail || 'Request failed (' + res.status + ')'); });
+    return res.json();
+  })
+  .then(data => {
+    // Track the job for persistence across page navigation
+    trackJob(data.job_id, {
+      job_type: 'batch',
+      tickers: data.tickers || tickers,
+      date: data.date || date,
+      mode: data.mode || mode,
+      risk_profile: data.risk_profile || risk_profile
+    });
+    
+    pollJobStatus(data.job_id, function(job) {
+      handleBatchJobStatus(job, tickers, runBtn, resultsPanel);
+    }, 5000);
+  })
+  .catch(err => {
+    runBtn.disabled = false;
+    runBtn.innerHTML = '📋 Run Batch';
+    resultsPanel.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">❌</div>
+        <div class="empty-state-title">Request Failed</div>
+        <p style="color: var(--qa-red);">${err.message || 'Unknown error'}</p>
+      </div>
+    `;
+  });
+});
+</script>
+{% endblock %}

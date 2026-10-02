@@ -1,11 +1,58 @@
-.venv
-results
+# Virtual environments
+.venv/
 env/
+venv/
+
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment (never commit secrets — public repo)
+.env
+.env.*
+!.env.example
+
+# Credentials / keys
+*.pem
+*.p12
+credentials.json
+service-account*.json
+
+# IDE
 .DS_Store
-*.csv
-src/
+.idea/
+*.swp
+*.swo
+.cursor/plans/
+
+# Data / cache
+tradingagents/dataflows/data_cache/
+research.db
+research.db-wal
+research.db-shm
+*.db.backup_*
+backups/
+
+# Output / results
+results/
+research_output/
 eval_results/
 eval_data/
-*.egg-info/
-.env
+
+# Archives (tracked separately or large)
+archive/
+
+# Misc
+src/
+*.csv
+uv.lock
+logs/
+
+# QA session feedback (local-only; procedure in docs/qa/README.md)
+/docs/qa/feedback/**
+!/docs/qa/feedback/README.md
+/docs/qa/SESSION.md

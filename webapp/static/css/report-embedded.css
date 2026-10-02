@@ -1,0 +1,866 @@
+/* =============================================================================
+ * report-embedded.css
+ *
+ * Theme-aware re-skin for the research-report HTML when it is embedded in
+ * the Report viewer page. The standalone report (delivered by
+ * tradingagents/reporting/pdf_generator.py and used for HTML download /
+ * PDF export) remains light-themed on purpose — that artifact is built
+ * for print and sharing. When the viewer mounts the report's body
+ * content inside a `.report-embedded` container, this stylesheet takes
+ * over and remaps every visual primitive to the app's CSS custom
+ * properties (defined per `[data-theme]` in styles.css), so it reads
+ * correctly under light, ivory, dark, midnight, nord, dusk, and ember.
+ *
+ * Scoping rule: every selector below is prefixed with `.report-embedded`
+ * so we never affect the viewer chrome or any other page.
+ * ===========================================================================*/
+
+/* -------- Container & page ------------------------------------------------ */
+.report-embedded {
+  --report-accent: var(--accent, #3B82F6);
+  --report-muted: var(--text-muted);
+  --report-card-bg: var(--bg-secondary);
+  --report-card-border: var(--border);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* Constrain long-form reading to a measure that stays in the 60–80ch
+ * sweet spot. The research report is prose-heavy; letting it span the
+ * full card width (1300px+ on desktop) produces lines that are hard to
+ * scan. 960px gives comfortable paragraph width while leaving
+ * generous padding on the card. */
+.report-embedded .page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 4px;
+  background: transparent;
+  color: inherit;
+}
+
+/* -------- Header ---------------------------------------------------------- */
+.report-embedded .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 28px;
+  gap: 20px;
+}
+
+.report-embedded .brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Ticker badge is pure branding — deliberately neutral so it never
+ * conflicts with the decision chip below it. Uses the theme's primary
+ * surface with a subtle accent border instead of a gradient that could
+ * read as "green = BUY" on a HOLD or SELL report. */
+.report-embedded .ticker-badge {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 14px 22px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.report-embedded .ticker-symbol {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.report-embedded .report-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+.report-embedded .meta {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.report-embedded .meta-row { margin-bottom: 4px; }
+.report-embedded .meta-label { color: var(--text-muted); margin-right: 6px; }
+.report-embedded .meta-value { color: var(--text-primary); font-weight: 600; }
+
+/* -------- Executive summary ---------------------------------------------- */
+.report-embedded .executive-summary {
+  display: flex;
+  gap: 20px;
+  padding: 20px 22px;
+  border-radius: 12px;
+  margin-bottom: 28px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+}
+
+.report-embedded .executive-summary.buy  { border-left-color: var(--buy-color); }
+.report-embedded .executive-summary.hold { border-left-color: var(--hold-color); }
+.report-embedded .executive-summary.sell { border-left-color: var(--sell-color); }
+
+.report-embedded .decision-chip {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #fff;
+  text-align: center;
+  min-width: 120px;
+  max-width: 200px;
+  align-self: center;
+  letter-spacing: 0.4px;
+  line-height: 1.25;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.report-embedded .decision-chip.buy  { background: var(--buy-color); }
+.report-embedded .decision-chip.hold { background: var(--hold-color); }
+.report-embedded .decision-chip.sell { background: var(--sell-color); }
+
+.report-embedded .summary-content { flex: 1; min-width: 0; }
+
+.report-embedded .summary-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.report-embedded .summary-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.report-embedded .decision-scorecard { margin: 0 0 24px; }
+.report-embedded .score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.report-embedded .score-box {
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.report-embedded .score-box.pass { border-color: var(--buy-color); }
+.report-embedded .score-box.fail { border-color: var(--sell-color); }
+.report-embedded .score-box.watch { border-color: var(--hold-color); }
+.report-embedded .score-box-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.report-embedded .score-box-status { font-size: 16px; font-weight: 700; margin: 4px 0; }
+.report-embedded .score-box-why { font-size: 12px; color: var(--text-primary); }
+.report-embedded .score-note,
+.report-embedded .lockup-note { font-size: 13px; margin: 8px 0; color: var(--text-primary); }
+.report-embedded .gate-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+.report-embedded .gate-table caption { text-align: left; font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
+.report-embedded .gate-table th,
+.report-embedded .gate-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+.report-embedded .gate-table tr.ok td:last-child { color: var(--buy-color); font-weight: 700; }
+.report-embedded .gate-table tr.bad td:last-child { color: var(--sell-color); font-weight: 700; }
+.report-embedded .satellite-appendix {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+.report-embedded .satellite-appendix h3 { margin: 0 0 6px; font-size: 14px; }
+.report-embedded .satellite-appendix pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
+
+/* -------- Metrics dashboard ----------------------------------------------
+ * auto-fit so N=3/4/5/6 cards all distribute evenly across the row
+ * instead of leaving the Nth card orphaned in column 1. Minimum card
+ * width (150px) ensures readable metric values on narrower viewports. */
+.report-embedded .metrics-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.report-embedded .metric-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 14px;
+  text-align: center;
+}
+
+.report-embedded .metric-value {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.report-embedded .metric-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+
+/* -------- Sections ------------------------------------------------------- */
+.report-embedded .section {
+  margin-bottom: 36px;
+  scroll-margin-top: 24px;   /* so TOC jumps don't hide title under sticky nav */
+}
+
+/* Stronger visual anchor for the top-level section header. An accent bar
+ * before the title gives the eye a strong hook when scanning the page,
+ * and pushing the size up to 22px/serif creates real hierarchy versus
+ * the content h2/h3/h4 below it. */
+.report-embedded .section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0 12px 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.report-embedded .section-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.report-embedded .section-icon {
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.report-embedded .section-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 0.2px;
+  line-height: 1.25;
+}
+
+.report-embedded .section-content {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+/* Nested headings within a section body (h2 = sub-section label).
+ * Keep them visibly distinct from the section-title above but clearly
+ * subordinate. */
+.report-embedded .section-content h2,
+.report-embedded .section-content h3,
+.report-embedded .section-content h4 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  color: var(--text-primary);
+  margin-top: 22px;
+  margin-bottom: 10px;
+  letter-spacing: 0.1px;
+}
+
+.report-embedded .section-content h2 {
+  font-size: 16px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+}
+.report-embedded .section-content h3 { font-size: 15px; }
+.report-embedded .section-content h4 { font-size: 13.5px; color: var(--text-secondary); }
+
+.report-embedded .section-content p {
+  margin-bottom: 14px;
+  max-width: 78ch;
+}
+
+.report-embedded .section-content strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.report-embedded .section-content em { color: var(--text-secondary); }
+
+.report-embedded .section-content a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent);
+}
+.report-embedded .section-content a:hover { border-bottom-style: solid; }
+
+/* Tighter, more scannable lists. The custom marker replaces the browser
+ * default disc so bullets read as intentional typography rather than
+ * noise. Accent-colored bullets give subtle visual rhythm. */
+.report-embedded .section-content ul,
+.report-embedded .section-content ul.report-list,
+.report-embedded .section-content ol {
+  margin: 10px 0 14px;
+  padding-left: 22px;
+  max-width: 80ch;
+}
+
+.report-embedded .section-content ul li,
+.report-embedded .section-content ol li,
+.report-embedded .section-content ul.report-list li {
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+.report-embedded .section-content ul li::marker {
+  color: var(--accent);
+}
+
+.report-embedded .section-content code {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.88em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* -------- Key points callout --------------------------------------------- */
+.report-embedded .key-points {
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--accent);
+  padding: 14px 18px;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.report-embedded .key-points-title {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.report-embedded .key-points ul { margin: 0; padding-left: 20px; }
+.report-embedded .key-points li { margin-bottom: 6px; font-size: 13px; }
+
+/* -------- Debate grid (bull / bear) -------------------------------------- */
+.report-embedded .debate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.report-embedded .debate-card {
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+}
+
+.report-embedded .debate-card.bull { border-left-color: var(--buy-color); }
+.report-embedded .debate-card.bear { border-left-color: var(--sell-color); }
+
+.report-embedded .debate-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.report-embedded .debate-icon { font-size: 18px; }
+
+.report-embedded .debate-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-embedded .debate-card.bull .debate-title { color: var(--buy-color); }
+.report-embedded .debate-card.bear .debate-title { color: var(--sell-color); }
+
+.report-embedded .debate-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.report-embedded .debate-content ul { margin: 0; padding-left: 18px; }
+.report-embedded .debate-content li { margin-bottom: 6px; }
+
+/* -------- Risk matrix ---------------------------------------------------- */
+.report-embedded .risk-matrix {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.report-embedded .risk-card {
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 12.5px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-top-width: 3px;
+}
+
+.report-embedded .risk-card.aggressive   { border-top-color: var(--sell-color); }
+.report-embedded .risk-card.neutral      { border-top-color: var(--hold-color); }
+.report-embedded .risk-card.conservative { border-top-color: var(--buy-color); }
+
+.report-embedded .risk-header {
+  font-weight: 700;
+  font-size: 11px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.report-embedded .risk-card.aggressive   .risk-header { color: var(--sell-color); }
+.report-embedded .risk-card.neutral      .risk-header { color: var(--hold-color); }
+.report-embedded .risk-card.conservative .risk-header { color: var(--buy-color); }
+
+.report-embedded .risk-content {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+/* -------- Trading plan --------------------------------------------------- */
+.report-embedded .trading-plan-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px;
+  margin: 16px 0;
+}
+
+.report-embedded .plan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.report-embedded .plan-item { text-align: center; }
+
+.report-embedded .plan-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.report-embedded .plan-value {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-embedded .plan-value.entry  { color: var(--accent); }
+.report-embedded .plan-value.stop   { color: var(--sell-color); }
+.report-embedded .plan-value.target { color: var(--buy-color); }
+
+/* -------- Earnings quality ---------------------------------------------- */
+.report-embedded .eq-grade { margin-bottom: 14px; }
+
+.report-embedded .grade-badge {
+  display: inline-block;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 8px 22px;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.report-embedded .grade-badge.grade-a { background: var(--buy-color); }
+.report-embedded .grade-badge.grade-b { background: var(--buy-color); filter: brightness(0.9); }
+.report-embedded .grade-badge.grade-c { background: var(--hold-color); }
+.report-embedded .grade-badge.grade-d { background: var(--hold-color); filter: brightness(0.85); }
+.report-embedded .grade-badge.grade-f { background: var(--sell-color); }
+
+.report-embedded .eq-metrics {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.report-embedded .eq-metrics td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+}
+
+.report-embedded .eq-metrics tr:nth-child(even) td {
+  background: var(--bg-hover);
+}
+
+.report-embedded .eq-metrics td:first-child {
+  font-weight: 600;
+  width: 55%;
+}
+
+/* -------- Valuation / DCF ------------------------------------------------ */
+.report-embedded .dcf-result { margin-bottom: 18px; }
+
+.report-embedded .dcf-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.report-embedded .fair-value {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-embedded .margin {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.report-embedded .margin.positive { color: var(--buy-color); background: var(--buy-bg); border-color: transparent; }
+.report-embedded .margin.negative { color: var(--sell-color); background: var(--sell-bg); border-color: transparent; }
+
+.report-embedded .dcf-assumptions {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.report-embedded .scenario-table,
+.report-embedded .report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.report-embedded .scenario-table th,
+.report-embedded .scenario-table td,
+.report-embedded .report-table th,
+.report-embedded .report-table td {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.report-embedded .scenario-table td,
+.report-embedded .report-table td {
+  vertical-align: top;
+}
+
+.report-embedded .scenario-table thead tr,
+.report-embedded .report-table thead tr {
+  background: var(--bg-hover);
+}
+
+.report-embedded .scenario-table th,
+.report-embedded .report-table th {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+
+.report-embedded .scenario-table tbody tr,
+.report-embedded .report-table tbody tr {
+  transition: background-color 140ms ease;
+}
+
+.report-embedded .scenario-table tbody tr:hover,
+.report-embedded .report-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+/* Heuristic numeric alignment: any cell whose text content is purely a
+ * number, percent, or dollar value gets right-aligned. Applied via JS
+ * after content injection (see report.html). */
+.report-embedded .report-table td.num,
+.report-embedded .scenario-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.report-embedded .scenario-table tr.bull td:first-child { color: var(--buy-color); font-weight: 600; }
+.report-embedded .scenario-table tr.base td:first-child { color: var(--hold-color); font-weight: 600; }
+.report-embedded .scenario-table tr.bear td:first-child { color: var(--sell-color); font-weight: 600; }
+
+/* -------- Catalyst section ---------------------------------------------- */
+.report-embedded .catalyst-content {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.report-embedded .catalyst-content p { margin-bottom: 10px; }
+
+/* -------- Footer --------------------------------------------------------- */
+.report-embedded .footer {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.report-embedded .footer-main {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.report-embedded .disclaimer {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* -------- Responsive tweaks --------------------------------------------- */
+@media (max-width: 900px) {
+  .report-embedded .plan-grid { grid-template-columns: repeat(2, 1fr); }
+  .report-embedded .debate-grid { grid-template-columns: 1fr; }
+  .report-embedded .risk-matrix { grid-template-columns: 1fr; }
+  .report-embedded .header { flex-direction: column; align-items: flex-start; }
+  .report-embedded .meta { text-align: left; }
+}
+
+/* -----------------------------------------------------------------------
+ * Injected affordances (added by report.html after content load)
+ *
+ *   .report-toc        — auto-generated Jump-to navigation at the top of
+ *                        the report body. Lists every .section-title as a
+ *                        smooth-scroll anchor so readers can skip the
+ *                        meta preamble (Data Provenance / QA Warnings /
+ *                        Section Attribution) and jump straight into the
+ *                        analytical sections.
+ *
+ *   .report-appendix   — meta/appendix sections (Data Provenance,
+ *                        QA Warnings, Section Attribution) get wrapped
+ *                        in a <details> collapse so they default closed
+ *                        and don't eat the first 800px of vertical space
+ *                        before the reader hits the real insight.
+ * -------------------------------------------------------------------- */
+
+/* Table of contents — rendered as a <details> element so the collapse
+ * affordance is native (keyboard-accessible, no custom state). Default
+ * is CLOSED: the summary pill takes ~32px of vertical space and the
+ * chip grid only materializes when the user explicitly asks for it.
+ * This solves the "obstructively long" TOC problem where a 10-section
+ * report wrapped into a 3-row vertical wall at the top of the page. */
+.report-embedded details.report-toc {
+  margin: 0 0 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+}
+
+.report-embedded details.report-toc > .toc-summary {
+  list-style: none;              /* hide default disclosure triangle */
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  outline: none;
+}
+
+.report-embedded details.report-toc > .toc-summary::-webkit-details-marker { display: none; }
+
+/* Custom caret — rotates when the TOC is open */
+.report-embedded details.report-toc > .toc-summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transition: transform 160ms ease;
+  transform: translateY(1px);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.report-embedded details.report-toc[open] > .toc-summary::before {
+  transform: translateY(1px) rotate(-180deg);
+}
+
+.report-embedded details.report-toc > .toc-summary:hover,
+.report-embedded details.report-toc > .toc-summary:focus-visible {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-dark, var(--border));
+}
+
+.report-embedded details.report-toc[open] > .toc-summary {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.report-embedded .toc-summary-label { font-weight: 600; }
+
+.report-embedded .toc-summary-count {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  line-height: 1;
+}
+
+/* Expanded chip grid */
+.report-embedded details.report-toc > .toc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  list-style: none;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  /* Subtle fade-in for a polished expand */
+  animation: report-toc-fade 160ms ease-out;
+}
+
+@keyframes report-toc-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.report-embedded details.report-toc > .toc-list li { margin: 0; }
+
+.report-embedded details.report-toc a {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.report-embedded details.report-toc a:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.report-embedded details.report-toc a.toc-appendix {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---- Collapsible appendix (<details>/<summary>) ---- */
+.report-embedded .report-appendix {
+  margin-bottom: 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.report-embedded .report-appendix > summary {
+  cursor: pointer;
+  padding: 12px 18px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.report-embedded .report-appendix > summary::-webkit-details-marker { display: none; }
+
+.report-embedded .report-appendix > summary::before {
+  content: '▸';
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 140ms ease;
+  line-height: 1;
+  display: inline-block;
+  width: 10px;
+}
+
+.report-embedded .report-appendix[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.report-embedded .report-appendix > summary:hover {
+  background: var(--bg-hover);
+}
+
+.report-embedded .report-appendix .appendix-body {
+  padding: 4px 20px 18px;
+}
+
+.report-embedded .report-appendix .appendix-body > :first-child { margin-top: 6px; }
+
+.report-embedded .report-appendix .summary-hint {
+  margin-left: auto;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}

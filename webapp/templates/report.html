@@ -1,0 +1,985 @@
+{% extends "base.html" %}
+
+{% block title %}Report #{{ analysis_id }} - TradingAgents{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/report-embedded.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+  <div>
+    <h1 class="page-title">Report #{{ analysis_id }}</h1>
+    <p class="page-subtitle" id="report-meta">Loading...</p>
+  </div>
+  <div class="quick-actions">
+    <a href="/history" class="btn btn-secondary">← Back to History</a>
+    <a href="/compare" class="btn btn-secondary">⚖️ Compare</a>
+    <button class="btn btn-secondary" id="export-html-btn">📄 HTML</button>
+    <button class="btn btn-primary" id="export-pdf-btn">📥 PDF</button>
+    <button class="btn btn-secondary" id="backtest-btn">📊 Backtest</button>
+    <button class="btn btn-secondary" id="delete-btn" style="background: var(--qa-red-bg); color: var(--qa-red); border-color: var(--qa-red);">🗑️ Delete</button>
+  </div>
+</div>
+
+<!-- Notes, Tags & Quality Panel -->
+<!-- Three-column grid: notes / tags / quality. Auto-collapses to a single
+     column on narrow screens via auto-fit. Quality column lets reviewers
+     grade the report (gold/silver/bronze/needs-work) plus an optional 0–100
+     score and free-text notes; data is persisted to the
+     analysis_quality_labels table via /api/analyses/{id}/quality. -->
+<div class="card" data-collapsible data-collapse-id="rpt-notes" style="margin-bottom: var(--spacing-4);">
+  <div class="card-header"><h3 style="margin:0;">Notes, Tags & Quality</h3></div>
+  <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--spacing-4);">
+    <div>
+      <label class="form-label">Notes</label>
+      <div style="display: flex; gap: var(--spacing-2);">
+        <textarea id="notes-input" class="form-textarea" rows="2" placeholder="Add notes about this analysis..." style="flex: 1;"></textarea>
+        <button id="save-notes" class="btn btn-secondary" style="height: fit-content;">Save</button>
+      </div>
+      <div id="notes-status" class="text-muted" style="font-size: var(--text-xs); margin-top: var(--spacing-1);"></div>
+    </div>
+    <div>
+      <label class="form-label">Tags</label>
+      <div style="display: flex; gap: var(--spacing-2);">
+        <input type="text" id="tags-input" class="form-input" placeholder="tag1, tag2, tag3" style="flex: 1;">
+        <button id="save-tags" class="btn btn-secondary" style="height: fit-content;">Save</button>
+      </div>
+      <div id="tags-status" class="text-muted" style="font-size: var(--text-xs); margin-top: var(--spacing-1);"></div>
+      <div id="current-tags" style="margin-top: var(--spacing-2);"></div>
+    </div>
+    <div>
+      <label class="form-label" style="display:flex;align-items:center;gap:var(--spacing-2);">
+        Quality Review
+        <span id="quality-current-badge" class="badge" style="display:none;font-size:11px;font-weight:600;letter-spacing:.3px;"></span>
+      </label>
+      <div style="display:flex;gap:var(--spacing-2);align-items:center;margin-bottom:var(--spacing-2);">
+        <select id="quality-label" class="form-input" style="flex:1;">
+          <option value="">— Unrated —</option>
+          <option value="gold">🥇 Gold (research-grade)</option>
+          <option value="silver">🥈 Silver (solid)</option>
+          <option value="bronze">🥉 Bronze (acceptable)</option>
+          <option value="needs-work">⚠ Needs Work</option>
+        </select>
+        <input type="number" id="quality-score" class="form-input" placeholder="0–100" min="0" max="100" step="1" style="width:90px;" title="Optional 0–100 score">
+      </div>
+      <div style="display:flex;gap:var(--spacing-2);">
+        <textarea id="quality-notes-input" class="form-textarea" rows="2" placeholder="What worked / what didn't?" style="flex:1;"></textarea>
+        <button id="save-quality" class="btn btn-secondary" style="height:fit-content;">Save</button>
+      </div>
+      <div id="quality-status" class="text-muted" style="font-size: var(--text-xs); margin-top: var(--spacing-1);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Signal Summary Card -->
+<div class="card" id="signal-summary-card" data-collapsible data-collapse-id="rpt-signals" style="margin-bottom: var(--spacing-4); display: none;">
+  <div class="card-header"><h3 style="margin:0;">Quantitative Signals</h3></div>
+  <div class="card-body" id="signal-summary-content"></div>
+</div>
+
+<!-- Risk Metrics Card -->
+<div class="card" id="risk-metrics-card" data-collapsible data-collapse-id="rpt-risk" style="margin-bottom: var(--spacing-4); display: none;">
+  <div class="card-header"><h3 style="margin:0;">Risk Metrics</h3></div>
+  <div class="card-body" id="risk-metrics-content"></div>
+</div>
+
+<!-- Institutional Analysis Card -->
+<div class="card" id="institutional-card" data-collapsible data-collapse-id="rpt-institutional" style="margin-bottom: var(--spacing-4); display: none;">
+  <div class="card-header"><h3 style="margin:0;">Institutional Analysis</h3></div>
+  <div class="card-body" id="institutional-content"></div>
+</div>
+
+<!-- Backtest Panel (hidden until triggered) -->
+<div class="card" id="backtest-panel" style="margin-bottom: var(--spacing-4); display: none;">
+  <h3 style="margin-bottom: var(--spacing-3);">Backtest Results</h3>
+  <div id="backtest-content"></div>
+</div>
+
+<div class="card">
+  <!-- .report-embedded is the theme-aware scope for the injected research
+       report HTML (see /static/css/report-embedded.css). The standalone
+       report document is served body-only from /api/reports/{id} so its
+       own light-only <style> block never leaks into the viewer. -->
+  <div class="report-embedded" id="report-content">
+    <div class="loading"><span class="spinner"></span> Loading report...</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// eslint-disable-next-line
+const analysisId = {{ analysis_id }};
+
+// Load analysis metadata
+fetch(`/api/analyses/${analysisId}`)
+  .then(res => res.json())
+  .then(data => {
+    analysisData = data;  // Store for export buttons
+    const decisionClass = getDecisionClass(data.decision);
+    const positionAction = parsePositionAction(data);
+    const decisionLabel = data.decision_label || formatDecisionLabel(data.decision, positionAction);
+
+    const modeLabel = (data.analysis_mode || 'standard').charAt(0).toUpperCase() + (data.analysis_mode || 'standard').slice(1);
+    const profileLabel = (data.risk_profile || 'growth').charAt(0).toUpperCase() + (data.risk_profile || 'growth').slice(1);
+    const modeClasses = { quick: 'badge-mode-quick', standard: 'badge-mode-standard', deep: 'badge-mode-deep' };
+    const profileClasses = { conservative: 'badge-conservative', growth: 'badge-growth', aggressive: 'badge-aggressive' };
+    const modeCls = modeClasses[(data.analysis_mode || 'standard').toLowerCase()] || 'badge-secondary';
+    const profileCls = profileClasses[(data.risk_profile || 'growth').toLowerCase()] || 'badge-secondary';
+    const investmentProfile = data.investment_profile_info || {};
+    const investmentLabel = investmentProfile.display_name || 'Generic / legacy';
+    const investmentSource = investmentProfile.resolved_from || 'legacy';
+
+    document.getElementById('report-meta').innerHTML = `
+      <strong>${data.ticker}</strong> | ${data.analysis_date} | 
+      <span class="${decisionClass}">${decisionLabel}</span> |
+      Confidence: ${data.confidence || 0}% | Quality: ${data.data_quality_score || 0}%
+      <span style="display:inline-flex;gap:4px;margin-left:8px;">
+        <span class="badge ${modeCls}" style="font-size:11px;font-weight:600;letter-spacing:.3px;">${modeLabel}</span>
+        <span class="badge ${profileCls}" style="font-size:11px;font-weight:600;letter-spacing:.3px;">${profileLabel}</span>
+        <span class="badge badge-secondary" title="Resolved from ${investmentSource}" style="font-size:11px;font-weight:600;letter-spacing:.3px;">${investmentLabel}</span>
+      </span>
+    `;
+    
+    // Load notes and tags
+    document.getElementById('notes-input').value = data.notes || '';
+    document.getElementById('tags-input').value = data.tags || '';
+    renderTags(data.tags);
+
+    // Render signal summary card
+    renderSignalSummary(data);
+
+    // Render risk metrics from report context
+    renderRiskMetrics(data);
+
+    // Render institutional analysis panel (DCF, scenarios, peer comps)
+    renderInstitutionalPanel(data);
+  });
+
+// Load report HTML
+fetch(`/api/reports/${analysisId}`)
+  .then(res => {
+    if (!res.ok) throw new Error('Report not found');
+    return res.json();
+  })
+  .then(data => {
+    const root = document.getElementById('report-content');
+    root.innerHTML = data.html;
+    enhanceReportForReadability(root);
+  })
+  .catch(err => {
+    document.getElementById('report-content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📄</div>
+        <div class="empty-state-title">Report Not Available</div>
+        <p>${err.message}</p>
+      </div>
+    `;
+  });
+
+/**
+ * Post-process the injected report body to make it easy to scan:
+ *   1. Assign stable anchor IDs to every .section-title
+ *   2. Build a "Jump to" TOC at the top of the .page wrapper
+ *   3. Wrap meta/appendix sections (Data Provenance, QA Warnings,
+ *      Section Attribution) in a collapsed <details> so the reader
+ *      lands on analytical content first
+ *   4. Auto-align numeric table cells to the right
+ *
+ * All transformations are idempotent — running twice is a no-op.
+ */
+function enhanceReportForReadability(root) {
+  if (!root) return;
+  const page = root.querySelector('.page');
+  if (!page) return;
+
+  // --- 1. Anchor IDs -------------------------------------------------------
+  const sections = Array.from(page.querySelectorAll('.section'));
+  const slug = (s) => s.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 60);
+  const used = new Set();
+  const sectionIndex = sections.map((sec) => {
+    const titleEl = sec.querySelector('.section-title');
+    const title = titleEl ? titleEl.textContent.trim() : '';
+    if (!title) return null;
+    let id = 'sec-' + slug(title);
+    let n = 2;
+    while (used.has(id)) { id = 'sec-' + slug(title) + '-' + n++; }
+    used.add(id);
+    sec.id = id;
+    return { id, title, el: sec };
+  }).filter(Boolean);
+
+  // --- 2. Build TOC --------------------------------------------------------
+  // Sections matching these titles are treated as appendix/meta and moved
+  // to the end of the TOC + collapsed in-body. Keep in sync with the
+  // appendix logic below.
+  const APPENDIX = new Set(['data provenance', 'qa warnings', 'section attribution']);
+  const TOC_STATE_KEY = 'report-toc-open';
+
+  if (sectionIndex.length >= 3 && !page.querySelector('.report-toc')) {
+    // A <details> element gives us the collapse-on-click affordance for
+    // free (keyboard-accessible, screen-reader-announced, no custom state).
+    // Default is CLOSED so the report reads cleanly; power users who
+    // prefer the TOC expanded get their choice remembered via
+    // localStorage. Clicking a section chip also collapses the TOC so
+    // the reader gets a clean view of their target.
+    const toc = document.createElement('details');
+    toc.className = 'report-toc';
+    toc.setAttribute('aria-label', 'Report sections');
+    try {
+      toc.open = localStorage.getItem(TOC_STATE_KEY) === '1';
+    } catch (_) { /* private mode / storage blocked — stay closed */ }
+
+    const summary = document.createElement('summary');
+    summary.className = 'toc-summary';
+    // Structured summary content: caret (CSS) + label + count chip
+    const sumLabel = document.createElement('span');
+    sumLabel.className = 'toc-summary-label';
+    sumLabel.textContent = 'Jump to section';
+    const sumCount = document.createElement('span');
+    sumCount.className = 'toc-summary-count';
+    sumCount.textContent = `${sectionIndex.length} available`;
+    summary.appendChild(sumLabel);
+    summary.appendChild(sumCount);
+    toc.appendChild(summary);
+
+    const ul = document.createElement('ul');
+    ul.className = 'toc-list';
+
+    // Primary (analytical) first, then appendix (italicized/muted)
+    const primary = [];
+    const appendix = [];
+    sectionIndex.forEach((s) => {
+      (APPENDIX.has(s.title.toLowerCase()) ? appendix : primary).push(s);
+    });
+    [...primary, ...appendix].forEach((s) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = '#' + s.id;
+      a.textContent = s.title;
+      if (APPENDIX.has(s.title.toLowerCase())) a.classList.add('toc-appendix');
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const target = document.getElementById(s.id);
+        if (!target) return;
+        // If the target lives inside a collapsed appendix, open it first
+        const appendixParent = target.closest('details.report-appendix');
+        if (appendixParent) appendixParent.open = true;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Auto-collapse TOC after navigation so the reader gets a clean
+        // view. Users who want the TOC persistent can expand it again —
+        // localStorage will remember that preference.
+        toc.open = false;
+      });
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    toc.appendChild(ul);
+
+    // Persist expand/collapse preference
+    toc.addEventListener('toggle', () => {
+      try { localStorage.setItem(TOC_STATE_KEY, toc.open ? '1' : '0'); } catch (_) {}
+    });
+
+    // Insert TOC right after the metrics-dashboard so the header and
+    // top-line KPIs stay visible; if no metrics block, place it at the
+    // top of .page.
+    const anchor = page.querySelector('.metrics-dashboard') || page.firstElementChild;
+    if (anchor && anchor.parentNode === page) {
+      anchor.insertAdjacentElement('afterend', toc);
+    } else {
+      page.insertBefore(toc, page.firstChild);
+    }
+  }
+
+  // --- 3. Collapse appendix sections into <details> ------------------------
+  sectionIndex.forEach((s) => {
+    if (!APPENDIX.has(s.title.toLowerCase())) return;
+    if (s.el.dataset.appendixWrapped === '1') return;
+
+    const header = s.el.querySelector('.section-header');
+    const content = s.el.querySelector('.section-content');
+    if (!header || !content) return;
+
+    const details = document.createElement('details');
+    details.className = 'report-appendix';
+    details.id = s.id;         // move the anchor target onto the details
+    s.el.removeAttribute('id');
+    const summary = document.createElement('summary');
+
+    // Preserve any icon + title
+    const icon = header.querySelector('.section-icon');
+    if (icon) summary.appendChild(icon.cloneNode(true));
+    const t = document.createElement('span');
+    t.textContent = s.title;
+    summary.appendChild(t);
+
+    const hint = document.createElement('span');
+    hint.className = 'summary-hint';
+    hint.textContent = 'Appendix · click to expand';
+    summary.appendChild(hint);
+
+    const body = document.createElement('div');
+    body.className = 'appendix-body';
+    // Move all remaining children of the section (after the header) into body
+    let node = header.nextSibling;
+    while (node) {
+      const next = node.nextSibling;
+      body.appendChild(node);
+      node = next;
+    }
+
+    details.appendChild(summary);
+    details.appendChild(body);
+    s.el.parentNode.replaceChild(details, s.el);
+    details.dataset.appendixWrapped = '1';
+  });
+
+  // --- 4. Numeric column alignment ----------------------------------------
+  // Right-align any cell whose trimmed text looks purely numeric / percent /
+  // currency / ratio. Skips cells that already carry an explicit class.
+  const NUMERIC_RE = /^[-+$]?\s*\d[\d,]*(\.\d+)?\s*%?\s*$/;
+  page.querySelectorAll('.report-table td, .scenario-table td, .eq-metrics td').forEach((td) => {
+    const txt = (td.textContent || '').trim();
+    if (NUMERIC_RE.test(txt) || txt === '---' || txt === '—') {
+      td.classList.add('num');
+    }
+  });
+}
+
+// Store analysis data for exports
+let analysisData = null;
+
+// HTML Export button — opens the raw, standalone light-themed document
+// in a new tab (print-ready, shareable). We deliberately serve this
+// via /api/reports/{id}/raw instead of any static mount because
+// research_output/ is not a publicly mounted directory.
+document.getElementById('export-html-btn').addEventListener('click', function() {
+  window.open(`/api/reports/${analysisId}/raw`, '_blank');
+});
+
+// PDF Export button
+document.getElementById('export-pdf-btn').addEventListener('click', async function() {
+  const btn = this;
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;margin-right:4px;"></span> Generating...';
+  
+  try {
+    const resp = await fetch(`/api/reports/${analysisId}/pdf`, { method: 'POST' });
+    if (!resp.ok) {
+      const err = await resp.json();
+      // Check if it's a system dependency issue
+      if (err.detail && err.detail.includes('system libraries')) {
+        if (confirm('Server PDF generation requires additional setup.\n\nWould you like to use your browser\'s Print to PDF instead?')) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          printReport();
+          return;
+        }
+      }
+      throw new Error(err.detail || 'PDF generation failed');
+    }
+    
+    // Download the PDF
+    const blob = await resp.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${analysisData.ticker}_${analysisData.analysis_date}_report.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    
+  } catch (err) {
+    alert('PDF export failed: ' + err.message);
+  }
+  
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+});
+
+// Browser print fallback — open the raw (standalone, light-themed,
+// print-ready) document in a new tab and trigger print. The embedded
+// body-only payload on the current page is stripped of its own styles
+// by design, so printing from the viewer would produce an unstyled
+// document; fetching /raw ensures the print view always matches the
+// polished standalone artifact.
+function printReport() {
+  const printWindow = window.open(`/api/reports/${analysisId}/raw`, '_blank');
+  if (!printWindow) return;
+  printWindow.addEventListener('load', function () {
+    try { printWindow.print(); } catch (e) { /* user can print manually */ }
+  });
+}
+
+// Save notes
+document.getElementById('save-notes').addEventListener('click', async () => {
+  const notes = document.getElementById('notes-input').value;
+  const status = document.getElementById('notes-status');
+  
+  try {
+    const resp = await fetch(`/api/analyses/${analysisId}/notes`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    });
+    if (resp.ok) {
+      status.textContent = 'Notes saved!';
+      status.style.color = 'var(--qa-green)';
+    } else {
+      throw new Error('Failed to save');
+    }
+  } catch (err) {
+    status.textContent = 'Error saving notes';
+    status.style.color = 'var(--qa-red)';
+  }
+  
+  setTimeout(() => { status.textContent = ''; }, 3000);
+});
+
+// Save tags
+document.getElementById('save-tags').addEventListener('click', async () => {
+  const tags = document.getElementById('tags-input').value;
+  const status = document.getElementById('tags-status');
+  
+  try {
+    const resp = await fetch(`/api/analyses/${analysisId}/tags`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
+    });
+    if (resp.ok) {
+      status.textContent = 'Tags saved!';
+      status.style.color = 'var(--qa-green)';
+      renderTags(tags);
+    } else {
+      throw new Error('Failed to save');
+    }
+  } catch (err) {
+    status.textContent = 'Error saving tags';
+    status.style.color = 'var(--qa-red)';
+  }
+  
+  setTimeout(() => { status.textContent = ''; }, 3000);
+});
+
+function renderTags(tagsStr) {
+  const container = document.getElementById('current-tags');
+  if (!tagsStr) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t);
+  container.innerHTML = tags.map(tag => 
+    `<span class="badge badge-secondary" style="margin-right: var(--spacing-1);">${tag}</span>`
+  ).join('');
+}
+
+// =========================================================================
+// QUALITY REVIEW
+// =========================================================================
+// Quality labels feed the cost-vs-quality optimization loop: a small set of
+// human-graded runs lets us estimate whether the deep model (e.g. gpt-5.4) is
+// worth its 75% spend share or if we can downshift to a cheaper deep model
+// without losing report quality. The label/score/notes are stored in the
+// analysis_quality_labels table (one row per analysis, upserted via
+// PUT /api/analyses/{id}/quality).
+
+const QUALITY_BADGE_STYLES = {
+  'gold':       { bg: '#fef3c7', fg: '#92400e', label: '🥇 Gold' },
+  'silver':     { bg: 'var(--bg-secondary)', fg: 'var(--text-secondary)', label: '🥈 Silver' },
+  'bronze':     { bg: '#fce7d6', fg: '#9c4221', label: '🥉 Bronze' },
+  'needs-work': { bg: 'var(--qa-red-bg)', fg: 'var(--qa-red)', label: '⚠ Needs Work' },
+};
+
+function renderQualityBadge(label, score) {
+  const badge = document.getElementById('quality-current-badge');
+  if (!badge) return;
+  const key = (label || '').toLowerCase();
+  const cfg = QUALITY_BADGE_STYLES[key];
+  if (!cfg) {
+    badge.style.display = 'none';
+    badge.textContent = '';
+    return;
+  }
+  badge.style.display = '';
+  badge.style.background = cfg.bg;
+  badge.style.color = cfg.fg;
+  badge.style.border = '1px solid currentColor';
+  badge.style.padding = '2px 8px';
+  badge.style.borderRadius = '999px';
+  badge.textContent = score != null && score !== ''
+    ? `${cfg.label} · ${Math.round(score)}`
+    : cfg.label;
+}
+
+// Hydrate quality fields on page load — non-fatal if the row doesn't exist.
+fetch(`/api/analyses/${analysisId}/quality`)
+  .then(res => res.ok ? res.json() : null)
+  .then(data => {
+    if (!data) return;
+    document.getElementById('quality-label').value = data.quality_label || '';
+    document.getElementById('quality-score').value =
+      data.quality_score != null ? data.quality_score : '';
+    document.getElementById('quality-notes-input').value = data.quality_notes || '';
+    renderQualityBadge(data.quality_label, data.quality_score);
+  })
+  .catch(() => {});
+
+document.getElementById('save-quality').addEventListener('click', async () => {
+  const label = document.getElementById('quality-label').value;
+  const scoreRaw = document.getElementById('quality-score').value;
+  const score = scoreRaw === '' ? null : Number(scoreRaw);
+  const notes = document.getElementById('quality-notes-input').value;
+  const status = document.getElementById('quality-status');
+
+  if (score != null && (Number.isNaN(score) || score < 0 || score > 100)) {
+    status.textContent = 'Score must be between 0 and 100';
+    status.style.color = 'var(--qa-red)';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+    return;
+  }
+
+  try {
+    const resp = await fetch(`/api/analyses/${analysisId}/quality`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quality_label: label,
+        quality_score: score,
+        quality_notes: notes,
+        evaluated_by: 'manual',
+      }),
+    });
+    if (!resp.ok) throw new Error('Failed to save');
+    const saved = await resp.json();
+    status.textContent = 'Quality saved!';
+    status.style.color = 'var(--qa-green)';
+    renderQualityBadge(saved.quality_label, saved.quality_score);
+  } catch (err) {
+    status.textContent = 'Error saving quality';
+    status.style.color = 'var(--qa-red)';
+  }
+  setTimeout(() => { status.textContent = ''; }, 3000);
+});
+
+// Backtest single analysis
+document.getElementById('backtest-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('backtest-btn');
+  const panel = document.getElementById('backtest-panel');
+  const content = document.getElementById('backtest-content');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;margin-right:4px;"></span> Testing...';
+  panel.style.display = 'block';
+  content.innerHTML = '<div class="loading"><span class="spinner"></span> Fetching price data and computing returns...</div>';
+  
+  try {
+    const resp = await fetch('/api/backtest/single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysis_id: analysisId, lookahead_days: [7, 14, 30] }),
+    });
+    const data = await resp.json();
+    
+    if (!data.updated) {
+      content.innerHTML = `
+        <div style="text-align: center; color: var(--text-muted);">
+          <p>Could not backtest this analysis.</p>
+          <p>Reason: <strong>${data.skip_reason || 'Unknown'}</strong></p>
+          <p class="text-muted" style="font-size: var(--text-xs);">
+            ${data.skip_reason === 'no_price_series' ? 'Price data not yet available for the analysis date. Try again after market data is available.' : ''}
+            ${data.skip_reason === 'invalid_date' ? 'The analysis date format is invalid.' : ''}
+            ${data.skip_reason === 'no_anchor' ? 'Could not find price at analysis date.' : ''}
+          </p>
+        </div>
+      `;
+    } else {
+      const correctIcon = data.was_correct ? '✅' : '❌';
+      const correctText = data.was_correct ? 'CORRECT' : 'INCORRECT';
+      const correctColor = data.was_correct ? 'var(--qa-green)' : 'var(--qa-red)';
+      
+      const fmtRet = (v) => v !== null && v !== undefined ? `${(v * 100).toFixed(2)}%` : 'N/A';
+      const fmtPrice = (v) => v !== null && v !== undefined ? `$${v.toFixed(2)}` : 'N/A';
+      const retColor = (v) => v !== null && v > 0 ? 'var(--qa-green)' : v !== null && v < 0 ? 'var(--qa-red)' : 'inherit';
+      const fmtAlpha = (v) => v != null ? `${v > 0 ? '+' : ''}${(v * 100).toFixed(2)}%` : 'N/A';
+      
+      content.innerHTML = `
+        <div style="text-align: center; margin-bottom: var(--spacing-3);">
+          <span style="font-size: 1.5em;">${correctIcon}</span>
+          <span style="font-size: var(--text-xl); font-weight: 600; color: ${correctColor}; margin-left: var(--spacing-2);">
+            Decision was ${correctText}
+          </span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-3);">
+          <div class="stat-card">
+            <div class="stat-label">Price at Analysis</div>
+            <div class="stat-value">${fmtPrice(data.price_at_analysis)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">After 7 Days</div>
+            <div class="stat-value">${fmtPrice(data.price_after_7d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.actual_return_7d)};">${fmtRet(data.actual_return_7d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.alpha_7d)}; font-size: var(--text-xs);">α ${fmtAlpha(data.alpha_7d)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">After 14 Days</div>
+            <div class="stat-value">${fmtPrice(data.price_after_14d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.actual_return_14d)};">${fmtRet(data.actual_return_14d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.alpha_14d)}; font-size: var(--text-xs);">α ${fmtAlpha(data.alpha_14d)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">After 30 Days</div>
+            <div class="stat-value">${fmtPrice(data.price_after_30d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.actual_return_30d)};">${fmtRet(data.actual_return_30d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.alpha_30d)}; font-size: var(--text-xs);">α ${fmtAlpha(data.alpha_30d)}</div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (err) {
+    content.innerHTML = `<div style="color: var(--qa-red);">Backtest failed: ${err.message}</div>`;
+  }
+  
+  btn.disabled = false;
+  btn.innerHTML = '📊 Backtest';
+});
+
+// Show existing backtest data if available
+fetch(`/api/analyses/${analysisId}`)
+  .then(res => res.json())
+  .then(data => {
+    if (data.was_correct !== null && data.was_correct !== undefined) {
+      // Auto-show backtest panel for already-tested analyses
+      document.getElementById('backtest-panel').style.display = 'block';
+      const content = document.getElementById('backtest-content');
+      const correctIcon = data.was_correct ? '✅' : '❌';
+      const correctText = data.was_correct ? 'CORRECT' : 'INCORRECT';
+      const correctColor = data.was_correct ? 'var(--qa-green)' : 'var(--qa-red)';
+      const fmtRet = (v) => v !== null && v !== undefined ? `${(v * 100).toFixed(2)}%` : 'N/A';
+      const fmtPrice = (v) => v !== null && v !== undefined ? `$${v.toFixed(2)}` : 'N/A';
+      const retColor = (v) => v !== null && v > 0 ? 'var(--qa-green)' : v !== null && v < 0 ? 'var(--qa-red)' : 'inherit';
+      const fmtAlpha = (v) => v != null ? `${v > 0 ? '+' : ''}${(v * 100).toFixed(2)}%` : 'N/A';
+      
+      content.innerHTML = `
+        <div style="text-align: center; margin-bottom: var(--spacing-3);">
+          <span style="font-size: 1.5em;">${correctIcon}</span>
+          <span style="font-size: var(--text-xl); font-weight: 600; color: ${correctColor}; margin-left: var(--spacing-2);">
+            Decision was ${correctText}
+          </span>
+          <div class="text-muted" style="font-size: var(--text-xs); margin-top: var(--spacing-1);">Previously backtested — click Backtest to refresh</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-3);">
+          <div class="stat-card">
+            <div class="stat-label">Price at Analysis</div>
+            <div class="stat-value">${fmtPrice(data.price_at_analysis)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">After 7 Days</div>
+            <div class="stat-value">${fmtPrice(data.price_after_7d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.actual_return_7d)};">${fmtRet(data.actual_return_7d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.alpha_7d)}; font-size: var(--text-xs);">α ${fmtAlpha(data.alpha_7d)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">After 14 Days</div>
+            <div class="stat-value">${fmtPrice(data.price_after_14d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.actual_return_14d)};">${fmtRet(data.actual_return_14d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.alpha_14d)}; font-size: var(--text-xs);">α ${fmtAlpha(data.alpha_14d)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">After 30 Days</div>
+            <div class="stat-value">${fmtPrice(data.price_after_30d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.actual_return_30d)};">${fmtRet(data.actual_return_30d)}</div>
+            <div class="stat-sub" style="color: ${retColor(data.alpha_30d)}; font-size: var(--text-xs);">α ${fmtAlpha(data.alpha_30d)}</div>
+          </div>
+        </div>
+      `;
+    }
+  })
+  .catch(() => {});
+
+// =========================================================================
+// SIGNAL SUMMARY
+// =========================================================================
+
+function renderSignalSummary(data) {
+  const card = document.getElementById('signal-summary-card');
+  const container = document.getElementById('signal-summary-content');
+
+  let ss;
+  try {
+    ss = typeof data.signal_summary === 'string' ? JSON.parse(data.signal_summary) : data.signal_summary;
+  } catch { ss = null; }
+
+  if (!ss || ss.composite == null) return;
+
+  card.style.display = '';
+
+  const composite = ss.composite;
+  const label = ss.composite_label || (composite > 0.2 ? 'Bullish' : composite < -0.2 ? 'Bearish' : 'Neutral');
+  const labelColor = label.toLowerCase().includes('bullish') ? 'var(--qa-green)'
+    : label.toLowerCase().includes('bearish') ? 'var(--qa-red)' : 'var(--text-muted)';
+
+  const bullish = ss.bullish_count || 0;
+  const bearish = ss.bearish_count || 0;
+  const neutral = ss.neutral_count || 0;
+  const total = ss.total_dimensions || (bullish + bearish + neutral) || 1;
+  const bullPct = (bullish / total * 100).toFixed(0);
+  const neutralPct = (neutral / total * 100).toFixed(0);
+  const bearPct = (bearish / total * 100).toFixed(0);
+
+  const avgConf = ss.avg_confidence != null ? (ss.avg_confidence * 100).toFixed(0) : null;
+
+  // Disagreement
+  const disagLabel = ss.disagreement_label || '';
+  const disagColor = disagLabel === 'HIGH' ? 'var(--qa-red)' : disagLabel === 'MODERATE' ? '#d69e2e' : 'var(--qa-green)';
+
+  // Index regime
+  const regimeFmt = formatIndexRegime(ss || {});
+
+  // Missing signals
+  const missing = ss.missing_signals || [];
+
+  // Data completeness
+  const completeness = ss.data_completeness;
+
+  // Decision guardrail override
+  let dj;
+  try {
+    dj = typeof data.decision_json === 'string' ? JSON.parse(data.decision_json) : data.decision_json;
+  } catch { dj = null; }
+
+  let overrideHtml = '';
+  if (dj && dj.override_reason) {
+    overrideHtml = `
+      <div style="margin-top: var(--spacing-3); padding: var(--spacing-3); background: #fef3c7; border-left: 4px solid #d69e2e; border-radius: var(--radius);">
+        <strong style="color: #92400e;">Guardrail Override:</strong>
+        Originally <span class="${getDecisionClass(dj.original_decision || '')}">${dj.original_decision || '?'}</span>
+        &rarr; overridden to <span class="${getDecisionClass(dj.final_decision || dj.decision || '')}">${dj.final_decision || dj.decision || '?'}</span>
+        <span class="text-muted" style="font-size: var(--text-xs);">(${dj.override_reason})</span>
+      </div>
+    `;
+  }
+
+  let completenessHtml = '';
+  if (completeness != null && completeness < 1.0) {
+    completenessHtml = `
+      <div style="margin-top: var(--spacing-3); padding: var(--spacing-2) var(--spacing-3); background: var(--bg-secondary); border-radius: var(--radius); font-size: var(--text-sm); color: var(--text-muted);">
+        ⚡ Quick mode: composite discounted to ${(completeness * 100).toFixed(0)}% of raw score due to reduced data coverage
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-3); margin-bottom: var(--spacing-3);">
+      <div class="stat-card" style="border-left: 4px solid ${labelColor};">
+        <div class="stat-label">Composite Score</div>
+        <div class="stat-value" style="color: ${labelColor};">${composite.toFixed(2)}</div>
+        <div class="stat-sub" style="color: ${labelColor}; font-weight: 600;">${label}</div>
+      </div>
+      ${avgConf != null ? `
+      <div class="stat-card">
+        <div class="stat-label">Avg Confidence</div>
+        <div class="stat-value">${avgConf}%</div>
+        <div style="margin-top:4px;background:var(--bg-secondary);border-radius:4px;height:8px;overflow:hidden;">
+          <div style="width:${avgConf}%;background:var(--qa-blue,#3182ce);height:100%;border-radius:4px;"></div>
+        </div>
+      </div>` : ''}
+      ${disagLabel ? `
+      <div class="stat-card">
+        <div class="stat-label">Ensemble Disagreement</div>
+        <div class="stat-value" style="color:${disagColor};">${disagLabel}</div>
+        ${ss.disagreement != null ? `<div class="stat-sub">${ss.disagreement.toFixed(3)}</div>` : ''}
+      </div>` : ''}
+      ${regimeFmt.label ? `
+      <div class="stat-card"${regimeFmt.border ? ` style="box-shadow: inset 0 0 0 ${regimeFmt.border};"` : ''}>
+        <div class="stat-label">Index Regime</div>
+        <div class="stat-value" style="color:${regimeFmt.color}; font-size: var(--text-sm);">${regimeFmt.label}</div>
+      </div>` : ''}
+    </div>
+
+    <div style="margin-bottom: var(--spacing-3);">
+      <div class="stat-label" style="margin-bottom: var(--spacing-1);">Dimension Breakdown</div>
+      <div style="display:flex;height:24px;border-radius:var(--radius);overflow:hidden;font-size:var(--text-xs);font-weight:600;color:white;">
+        ${bullPct > 0 ? `<div style="width:${bullPct}%;background:var(--qa-green);display:flex;align-items:center;justify-content:center;">${bullish} Bull</div>` : ''}
+        ${neutralPct > 0 ? `<div style="width:${neutralPct}%;background:#a0aec0;display:flex;align-items:center;justify-content:center;">${neutral} Neutral</div>` : ''}
+        ${bearPct > 0 ? `<div style="width:${bearPct}%;background:var(--qa-red);display:flex;align-items:center;justify-content:center;">${bearish} Bear</div>` : ''}
+      </div>
+    </div>
+
+    ${missing.length > 0 ? `
+    <div style="margin-bottom: var(--spacing-3);">
+      <span class="badge" style="background:#fef3c7;color:#92400e;font-weight:600;">⚠ Missing Signals</span>
+      <span class="text-muted" style="font-size: var(--text-sm); margin-left: var(--spacing-2);">${missing.join(', ')}</span>
+    </div>` : ''}
+
+    ${completenessHtml}
+    ${overrideHtml}
+  `;
+}
+
+// =========================================================================
+// RISK METRICS
+// =========================================================================
+
+function renderRiskMetrics(data) {
+  const card = document.getElementById('risk-metrics-card');
+  const container = document.getElementById('risk-metrics-content');
+
+  const report = data.risk_assessment || data.risk_report || data.risk_context || '';
+  if (!report) return;
+
+  const cvarMatch = report.match(/CVaR.*?(-?\d+\.?\d*)%/i) || report.match(/Expected Shortfall.*?(-?\d+\.?\d*)%/i);
+  const varMatch = report.match(/VaR.*?(-?\d+\.?\d*)%/i);
+  const volMatch = report.match(/Volatility.*?(-?\d+\.?\d*)%/i) || report.match(/Ann.*?Vol.*?(-?\d+\.?\d*)%/i);
+  const betaMatch = report.match(/Beta.*?(-?\d+\.?\d*)/i);
+
+  if (!cvarMatch && !varMatch && !volMatch) return;
+
+  card.style.display = '';
+  container.innerHTML = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-3);">
+      ${varMatch ? `
+      <div class="stat-card">
+        <div class="stat-label">VaR (95%)</div>
+        <div class="stat-value" style="color: var(--qa-red);">${varMatch[1]}%</div>
+      </div>` : ''}
+      ${cvarMatch ? `
+      <div class="stat-card" style="border-left: 3px solid var(--qa-red);">
+        <div class="stat-label">CVaR (95%)</div>
+        <div class="stat-value" style="color: var(--qa-red);">${cvarMatch[1]}%</div>
+        <div class="stat-sub">Expected Shortfall</div>
+      </div>` : ''}
+      ${volMatch ? `
+      <div class="stat-card">
+        <div class="stat-label">Annualized Volatility</div>
+        <div class="stat-value">${volMatch[1]}%</div>
+      </div>` : ''}
+      ${betaMatch ? `
+      <div class="stat-card">
+        <div class="stat-label">Beta</div>
+        <div class="stat-value">${betaMatch[1]}</div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+// =========================================================================
+// INSTITUTIONAL ANALYSIS PANEL
+// =========================================================================
+
+function renderInstitutionalPanel(data) {
+  const card = document.getElementById('institutional-card');
+  const container = document.getElementById('institutional-content');
+
+  let iv = null, sa = null, pc = null;
+  try { iv = data.intrinsic_value_data ? JSON.parse(data.intrinsic_value_data) : null; } catch {}
+  try { sa = data.scenario_analysis ? JSON.parse(data.scenario_analysis) : null; } catch {}
+  try { pc = data.peer_comps ? JSON.parse(data.peer_comps) : null; } catch {}
+
+  if (!iv && !sa && !pc) return;
+  card.style.display = '';
+
+  const fmtPct = (v) => v != null ? `${(v * 100).toFixed(1)}%` : '—';
+  const fmtPrice = (v) => v != null ? `$${Number(v).toFixed(2)}` : '—';
+  const fmtNum = (v, d = 1) => v != null ? Number(v).toFixed(d) : '—';
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--spacing-4);">';
+
+  // DCF
+  if (iv && iv.fair_value) {
+    const margin = iv.margin_of_safety_pct;
+    const color = margin > 10 ? 'var(--qa-green)' : margin > -10 ? '#d97706' : 'var(--qa-red)';
+    const label = margin > 10 ? 'Undervalued' : margin > -10 ? 'Fair value' : 'Overvalued';
+    const impliedPct = iv.implied_growth_rate != null ? fmtPct(iv.implied_growth_rate) : null;
+    const vs = iv.implied_vs_consensus;
+    html += `<div class="stat-card">
+      <div class="stat-label">DCF FAIR VALUE</div>
+      <div class="stat-value">${fmtPrice(iv.fair_value)}</div>
+      <div style="font-size:12px;font-weight:600;color:${color};">${label} by ${Math.abs(margin || 0).toFixed(1)}%</div>
+      ${iv.assumptions ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">WACC ${(iv.assumptions.wacc*100).toFixed(1)}% · Growth ${(iv.assumptions.growth_rate*100).toFixed(1)}%</div>` : ''}
+      ${impliedPct ? `<div style="font-size:11px;margin-top:4px;color:var(--text-secondary);">Market-implied growth: <strong>${impliedPct}</strong>${vs != null ? `<span style="margin-left:6px;color:${vs >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};">${vs >= 0 ? '+' : ''}${(vs * 100).toFixed(1)}pp vs consensus</span>` : ''}</div>` : ''}
+    </div>`;
+  }
+
+  // Scenarios
+  if (sa && (sa.bull_case || sa.base_case || sa.bear_case)) {
+    const blended = sa.blended_fair_value;
+    const upside = sa.blended_upside_pct;
+    const bColor = upside != null ? (Number(upside) > 5 ? 'var(--qa-green)' : Number(upside) < -5 ? 'var(--qa-red)' : '#d97706') : 'var(--text-muted)';
+    html += `<div class="stat-card">
+      <div class="stat-label">SCENARIO TARGETS</div>
+      ${sa.bull_case ? `<div style="font-size:12px;display:flex;justify-content:space-between;"><span style="color:var(--qa-green);">Bull</span><strong>${fmtPrice(sa.bull_case)}</strong></div>` : ''}
+      ${sa.base_case ? `<div style="font-size:12px;display:flex;justify-content:space-between;"><span>Base</span><strong>${fmtPrice(sa.base_case)}</strong></div>` : ''}
+      ${sa.bear_case ? `<div style="font-size:12px;display:flex;justify-content:space-between;"><span style="color:var(--qa-red);">Bear</span><strong>${fmtPrice(sa.bear_case)}</strong></div>` : ''}
+      ${blended != null ? `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);"><div style="font-size:10px;color:var(--text-muted);">PROB-WEIGHTED TARGET</div><div style="font-size:16px;font-weight:700;color:${bColor};">${fmtPrice(blended)}</div>${upside != null ? `<div style="font-size:11px;color:${bColor};">${Number(upside) > 0 ? '+' : ''}${Number(upside).toFixed(1)}%</div>` : ''}</div>` : ''}
+    </div>`;
+  }
+
+  // Peer comps — data structure: pc.multiples.{forward_pe,price_to_sales,ev_to_ebitda}
+  //   each has: target_value, peer_median, percentile_rank, peer_count
+  const pcMultiples = pc?.multiples || {};
+  const fpe = pcMultiples.forward_pe, ps = pcMultiples.price_to_sales, eveb = pcMultiples.ev_to_ebitda;
+  if (pc && (fpe?.target_value != null || ps?.target_value != null)) {
+    const pctLabel = (p) => p != null ? (p <= 25 ? ' · cheap' : p >= 75 ? ' · expensive' : '') : '';
+    const peerCount = fpe?.peer_count || ps?.peer_count || eveb?.peer_count || 0;
+    html += `<div class="stat-card">
+      <div class="stat-label">PEER COMPARABLES</div>
+      ${fpe?.target_value != null ? `<div style="font-size:12px;display:flex;justify-content:space-between;margin-bottom:2px;"><span>Forward P/E</span><span><strong>${fmtNum(fpe.target_value)}</strong><span style="color:var(--text-muted);font-size:10px;margin-left:4px;">vs ${fpe.peer_median != null ? fmtNum(fpe.peer_median) : '—'} med${pctLabel(fpe.percentile_rank)}</span></span></div>` : ''}
+      ${ps?.target_value != null ? `<div style="font-size:12px;display:flex;justify-content:space-between;margin-bottom:2px;"><span>P/S</span><span><strong>${fmtNum(ps.target_value)}</strong><span style="color:var(--text-muted);font-size:10px;margin-left:4px;">vs ${ps.peer_median != null ? fmtNum(ps.peer_median) : '—'} med${pctLabel(ps.percentile_rank)}</span></span></div>` : ''}
+      ${eveb?.target_value != null ? `<div style="font-size:12px;display:flex;justify-content:space-between;"><span>EV/EBITDA</span><span><strong>${fmtNum(eveb.target_value)}</strong><span style="color:var(--text-muted);font-size:10px;margin-left:4px;">vs ${eveb.peer_median != null ? fmtNum(eveb.peer_median) : '—'} med${pctLabel(eveb.percentile_rank)}</span></span></div>` : ''}
+      <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">${peerCount} sector peers · ${pc.sector || ''} ${pc.market_cap_tier || ''}</div>
+    </div>`;
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// =========================================================================
+// DELETE
+// =========================================================================
+
+// Delete analysis
+document.getElementById('delete-btn').addEventListener('click', async () => {
+  const ticker = analysisData?.ticker || 'this analysis';
+  const date = analysisData?.analysis_date || '';
+  
+  if (!confirm(`Are you sure you want to delete the analysis for ${ticker} (${date})?\n\nThis will permanently delete:\n• Database record\n• HTML report\n• PDF report (if exists)\n\nThis action cannot be undone.`)) {
+    return;
+  }
+  
+  const btn = document.getElementById('delete-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;"></span> Deleting...';
+  
+  try {
+    const resp = await fetch(`/api/analyses/${analysisId}`, { method: 'DELETE' });
+    
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Delete failed');
+    }
+    
+    const result = await resp.json();
+    alert(`Analysis deleted successfully.\n\nFiles removed: ${result.files_deleted.length}`);
+    
+    // Redirect to history page
+    window.location.href = '/history';
+    
+  } catch (err) {
+    alert('Failed to delete: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '🗑️ Delete';
+  }
+});
+</script>
+{% endblock %}

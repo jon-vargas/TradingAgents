@@ -1,0 +1,12 @@
+{
+  "S&P 500 Top 100": {
+    "target_watchlist_name": "S&P 500",
+    "target_index_key": "sp500_full",
+    "status": "active"
+  },
+  "Russell 2000 Top 100": {
+    "target_watchlist_name": "Russell 2000",
+    "target_index_key": "russell2000_full",
+    "status": "active"
+  }
+}

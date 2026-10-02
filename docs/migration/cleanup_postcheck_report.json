@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-04-22T00:00:00+00:00",
+  "mode": "clean_restart_v1",
+  "checks": {
+    "legacy_alias_resolution_ok": true,
+    "watchlist_reference_integrity_ok": true,
+    "exports_contract_ok": true
+  },
+  "notes": [
+    "This artifact is a versioned postcheck template for migration QA.",
+    "Capture live post-run evidence after each migration execution."
+  ]
+}

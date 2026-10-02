@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}History - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+  <div>
+    <h1 class="page-title">History & Reports</h1>
+    <p class="page-subtitle">Search and review past analyses</p>
+  </div>
+  <div style="display: flex; gap: var(--spacing-2);">
+    <select id="saved-views" class="filter-input" style="min-width: 150px;">
+      <option value="">Saved Views...</option>
+    </select>
+    <button class="btn btn-secondary" id="save-view-btn" title="Save current filters as a view">💾 Save View</button>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card" data-collapsible data-collapse-id="hist-filters" style="margin-bottom: var(--spacing-4);">
+  <div class="card-header"><h3 style="margin:0;">Filters</h3></div>
+  <div class="card-body" style="padding: var(--spacing-4);">
+<div class="filters-bar">
+  <div class="filter-group">
+    <label class="filter-label">Ticker</label>
+    <input type="text" id="filter-ticker" class="filter-input" placeholder="e.g., AAPL">
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Start Date</label>
+    <input type="date" id="filter-start" class="filter-input">
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">End Date</label>
+    <input type="date" id="filter-end" class="filter-input">
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Risk Profile</label>
+    <select id="filter-risk-profile" class="filter-input">
+      <option value="">All profiles</option>
+      <option value="aggressive">Aggressive</option>
+      <option value="growth">Growth</option>
+      <option value="conservative">Conservative</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Research Mode</label>
+    <select id="filter-mode" class="filter-input">
+      <option value="">All modes</option>
+      <option value="quick">Quick</option>
+      <option value="standard">Standard</option>
+      <option value="deep">Deep</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Tag</label>
+    <select id="filter-tag" class="filter-input">
+      <option value="">All tags</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Limit</label>
+    <select id="filter-limit" class="filter-input">
+      <option value="25">25</option>
+      <option value="50" selected>50</option>
+      <option value="100">100</option>
+    </select>
+  </div>
+  <div class="filter-group" style="align-self: flex-end;">
+    <button class="btn btn-primary" id="apply-filters">Apply</button>
+  </div>
+</div>
+  </div>
+</div>
+
+<!-- Results Table -->
+<div class="card">
+  <div class="table-container" id="history-table">
+    <div class="loading"><span class="spinner"></span> Loading...</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load available tags
+async function loadTags() {
+  try {
+    const resp = await fetch('/api/tags');
+    const tags = await resp.json();
+    const select = document.getElementById('filter-tag');
+    tags.forEach(tag => {
+      select.insertAdjacentHTML('beforeend', `<option value="${tag}">${tag}</option>`);
+    });
+  } catch (err) {
+    console.error('Failed to load tags:', err);
+  }
+}
+
+// Load saved views
+async function loadSavedViews() {
+  try {
+    const resp = await fetch('/api/views');
+    const views = await resp.json();
+    const select = document.getElementById('saved-views');
+    views.forEach(v => {
+      select.insertAdjacentHTML('beforeend', `<option value="${v.id}">${v.name}</option>`);
+    });
+  } catch (err) {
+    console.error('Failed to load saved views:', err);
+  }
+}
+
+// Apply saved view
+document.getElementById('saved-views').addEventListener('change', async (e) => {
+  const viewId = e.target.value;
+  if (!viewId) return;
+  
+  try {
+    const resp = await fetch(`/api/views/${viewId}`);
+    const view = await resp.json();
+    const filters = view.filters || {};
+    
+    // Apply filter values
+    if (filters.ticker) document.getElementById('filter-ticker').value = filters.ticker;
+    if (filters.start_date) document.getElementById('filter-start').value = filters.start_date;
+    if (filters.end_date) document.getElementById('filter-end').value = filters.end_date;
+    if (filters.risk_profile) document.getElementById('filter-risk-profile').value = filters.risk_profile;
+    if (filters.analysis_mode) document.getElementById('filter-mode').value = filters.analysis_mode;
+    if (filters.tag) document.getElementById('filter-tag').value = filters.tag;
+    if (filters.limit) document.getElementById('filter-limit').value = filters.limit;
+    
+    loadHistory();
+  } catch (err) {
+    console.error('Failed to apply view:', err);
+  }
+});
+
+// Save current view
+document.getElementById('save-view-btn').addEventListener('click', async () => {
+  const name = prompt('Enter a name for this view:');
+  if (!name) return;
+  
+  const filters = {
+    ticker: document.getElementById('filter-ticker').value,
+    start_date: document.getElementById('filter-start').value,
+    end_date: document.getElementById('filter-end').value,
+    risk_profile: document.getElementById('filter-risk-profile').value,
+    analysis_mode: document.getElementById('filter-mode').value,
+    tag: document.getElementById('filter-tag').value,
+    limit: document.getElementById('filter-limit').value,
+  };
+  
+  try {
+    const resp = await fetch('/api/views', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, filters }),
+    });
+    const result = await resp.json();
+    alert(`View "${name}" saved!`);
+    
+    // Refresh views dropdown
+    const select = document.getElementById('saved-views');
+    select.insertAdjacentHTML('beforeend', `<option value="${result.id}">${name}</option>`);
+  } catch (err) {
+    alert('Failed to save view: ' + err.message);
+  }
+});
+
+function loadHistory() {
+  const ticker = document.getElementById('filter-ticker').value;
+  const startDate = document.getElementById('filter-start').value;
+  const endDate = document.getElementById('filter-end').value;
+  const riskProfile = document.getElementById('filter-risk-profile').value;
+  const analysisMode = document.getElementById('filter-mode').value;
+  const tag = document.getElementById('filter-tag').value;
+  const limit = document.getElementById('filter-limit').value;
+  
+  // If tag is selected, use tag endpoint
+  if (tag) {
+    fetch(`/api/analyses/by-tag/${encodeURIComponent(tag)}?limit=${limit}`)
+      .then(res => res.json())
+      .then(renderTable);
+    return;
+  }
+  
+  let url = `/api/analyses?limit=${limit}`;
+  if (ticker) url += `&ticker=${ticker.toUpperCase()}`;
+  if (startDate) url += `&start_date=${startDate}`;
+  if (endDate) url += `&end_date=${endDate}`;
+  if (riskProfile) url += `&risk_profile=${riskProfile}`;
+  if (analysisMode) url += `&analysis_mode=${analysisMode}`;
+  
+  fetch(url)
+    .then(res => res.json())
+    .then(renderTable);
+}
+
+function getRiskProfileBadge(profile) {
+  const classes = { aggressive: 'badge-aggressive', growth: 'badge-growth', conservative: 'badge-conservative' };
+  const labels = { aggressive: 'Aggressive', growth: 'Growth', conservative: 'Conservative' };
+  const label = labels[profile] || profile || '-';
+  const cls = classes[profile] || 'badge-secondary';
+  return `<span class="badge ${cls}" style="font-size:10px;font-weight:600;letter-spacing:.3px;">${label}</span>`;
+}
+
+function getModeBadge(mode) {
+  const classes = { quick: 'badge-mode-quick', standard: 'badge-mode-standard', deep: 'badge-mode-deep' };
+  const labels = { quick: 'Quick', standard: 'Standard', deep: 'Deep' };
+  const label = labels[mode] || mode || '-';
+  const cls = classes[mode] || 'badge-secondary';
+  return `<span class="badge ${cls}" style="font-size:10px;font-weight:600;letter-spacing:.3px;">${label}</span>`;
+}
+
+function renderTable(data) {
+  const container = document.getElementById('history-table');
+  
+  if (data.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📜</div>
+        <div class="empty-state-title">No analyses found</div>
+        <p>Try adjusting your filters or run a new analysis.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let rows = data.map(a => {
+    const decisionClass = getDecisionClass(a.decision);
+    const decisionLabel = a.decision_label || formatDecisionLabel(a.decision, parsePositionAction(a));
+    const qaHtml = formatQAWarningGroups(a);
+    const investmentProfile = a.investment_profile_info || {};
+    const investmentLabel = investmentProfile.display_name || 'Generic / legacy';
+    const tags = a.tags ? a.tags.split(',').map(t => 
+      `<span class="badge badge-secondary" style="font-size: 10px; margin-right: 2px;">${t.trim()}</span>`
+    ).join('') : '';
+
+    // Parse alpha
+    const alpha7d = a.alpha_7d;
+    const alphaDisplay = alpha7d != null
+      ? `<span style="color: ${alpha7d >= 0 ? 'var(--qa-green)' : 'var(--qa-red)'};">${alpha7d > 0 ? '+' : ''}${(alpha7d * 100).toFixed(2)}%</span>`
+      : '-';
+
+    // Parse index regime from signal_summary JSON
+    let regimeFmt = { label: '', color: 'var(--text-muted)', border: '' };
+    try {
+      const ss = typeof a.signal_summary === 'string' ? JSON.parse(a.signal_summary) : a.signal_summary;
+      regimeFmt = formatIndexRegime(ss || {});
+    } catch {}
+    const regimeDisplay = regimeFmt.label
+      ? `<span style="color:${regimeFmt.color};font-weight:600;font-size:11px;${regimeFmt.border ? `border:${regimeFmt.border};padding:1px 4px;border-radius:3px;` : ''}">${regimeFmt.label}</span>`
+      : '-';
+
+    return `
+      <tr>
+        <td>${a.id}</td>
+        <td><strong><a href="/history/${a.id}">${a.ticker}</a></strong><br><span style="color:var(--text-muted);font-size:10px;">${investmentLabel}</span></td>
+        <td>${a.analysis_date}</td>
+        <td><span class="${decisionClass}">${decisionLabel}</span></td>
+        <td>${getRiskProfileBadge(a.risk_profile)}</td>
+        <td>${getModeBadge(a.analysis_mode)}</td>
+        <td>${a.confidence || 0}%</td>
+        <td>${alphaDisplay}</td>
+        <td>${regimeDisplay}</td>
+        <td>${qaHtml}</td>
+        <td>
+          ${a.sec_snapshot ? '📄' : ''}
+          ${a.transcript_snapshot ? '🎤' : ''}
+        </td>
+        <td>${a.created_at ? a.created_at.split('T')[0] : '-'}</td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.location='/history/${a.id}'">View</button>
+          <button class="btn btn-secondary btn-sm delete-btn" data-id="${a.id}" data-ticker="${a.ticker}" data-date="${a.analysis_date}" 
+                  onclick="event.stopPropagation(); deleteAnalysis(${a.id}, '${a.ticker}', '${a.analysis_date}')"
+                  style="background: var(--qa-red-bg); color: var(--qa-red); border-color: var(--qa-red); padding: 2px 6px;">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Ticker</th>
+          <th>Date</th>
+          <th>Decision</th>
+          <th>Risk Profile</th>
+          <th>Mode</th>
+          <th>Confidence</th>
+          <th>Alpha (7d)</th>
+          <th>Index Regime</th>
+          <th>Warnings</th>
+          <th>Snapshots</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+document.getElementById('apply-filters').addEventListener('click', loadHistory);
+document.addEventListener('DOMContentLoaded', () => {
+  loadTags();
+  loadSavedViews();
+  loadHistory();
+});
+
+// Delete analysis function
+async function deleteAnalysis(id, ticker, date) {
+  if (!confirm(`Delete analysis for ${ticker} (${date})?\n\nThis will permanently delete the database record and report files.\n\nThis action cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const resp = await fetch(`/api/analyses/${id}`, { method: 'DELETE' });
+    
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Delete failed');
+    }
+    
+    // Refresh the table
+    loadHistory();
+    
+  } catch (err) {
+    alert('Failed to delete: ' + err.message);
+  }
+}
+</script>
+{% endblock %}

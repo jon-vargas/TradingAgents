@@ -4,14 +4,29 @@ from openai import OpenAI
 
 
 class FinancialSituationMemory:
-    def __init__(self, name, config):
+    def __init__(self, name, config, reset_on_init=False):
+        """Initialize memory with ChromaDB collection.
+        
+        Args:
+            name: Collection name
+            config: Configuration dict with backend_url
+            reset_on_init: If True, clears existing collection data for fresh start
+        """
         if config["backend_url"] == "http://localhost:11434/v1":
             self.embedding = "nomic-embed-text"
         else:
             self.embedding = "text-embedding-3-small"
         self.client = OpenAI(base_url=config["backend_url"])
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
-        self.situation_collection = self.chroma_client.create_collection(name=name)
+        
+        # Use get_or_create to handle existing collections gracefully
+        self.situation_collection = self.chroma_client.get_or_create_collection(name=name)
+        
+        # Optionally reset collection for fresh analysis
+        if reset_on_init and self.situation_collection.count() > 0:
+            # Delete and recreate for clean slate
+            self.chroma_client.delete_collection(name=name)
+            self.situation_collection = self.chroma_client.create_collection(name=name)
 
     def get_embedding(self, text):
         """Get OpenAI embedding for a text"""
@@ -69,7 +84,8 @@ class FinancialSituationMemory:
 
 if __name__ == "__main__":
     # Example usage
-    matcher = FinancialSituationMemory()
+    example_config = {"backend_url": "https://api.openai.com/v1"}
+    matcher = FinancialSituationMemory("test_memory", example_config)
 
     # Example data
     example_data = [

@@ -1,4 +1,5 @@
 from typing import Annotated
+import logging
 import pandas as pd
 import os
 from .config import DATA_DIR
@@ -8,45 +9,7 @@ import json
 from .reddit_utils import fetch_top_from_category
 from tqdm import tqdm
 
-def get_YFin_data_window(
-    symbol: Annotated[str, "ticker symbol of the company"],
-    curr_date: Annotated[str, "Start date in yyyy-mm-dd format"],
-    look_back_days: Annotated[int, "how many days to look back"],
-) -> str:
-    # calculate past days
-    date_obj = datetime.strptime(curr_date, "%Y-%m-%d")
-    before = date_obj - relativedelta(days=look_back_days)
-    start_date = before.strftime("%Y-%m-%d")
-
-    # read in data
-    data = pd.read_csv(
-        os.path.join(
-            DATA_DIR,
-            f"market_data/price_data/{symbol}-YFin-data-2015-01-01-2025-03-25.csv",
-        )
-    )
-
-    # Extract just the date part for comparison
-    data["DateOnly"] = data["Date"].str[:10]
-
-    # Filter data between the start and end dates (inclusive)
-    filtered_data = data[
-        (data["DateOnly"] >= start_date) & (data["DateOnly"] <= curr_date)
-    ]
-
-    # Drop the temporary column we created
-    filtered_data = filtered_data.drop("DateOnly", axis=1)
-
-    # Set pandas display options to show the full DataFrame
-    with pd.option_context(
-        "display.max_rows", None, "display.max_columns", None, "display.width", None
-    ):
-        df_string = filtered_data.to_string()
-
-    return (
-        f"## Raw Market Data for {symbol} from {start_date} to {curr_date}:\n\n"
-        + df_string
-    )
+logger = logging.getLogger("tradingagents.dataflows.local")
 
 def get_YFin_data(
     symbol: Annotated[str, "ticker symbol of the company"],
@@ -201,6 +164,13 @@ def get_data_in_range(ticker, start_date, end_date, data_type, data_dir, period=
         data_dir (str): Directory where the data is saved.
         period (str): Default to none, if there is a period specified, should be annual or quarterly.
     """
+    
+    # Check if data_dir is configured
+    if data_dir is None:
+        raise FileNotFoundError(
+            f"Local data directory not configured. Set 'data_dir' in config to use local data vendors. "
+            f"(Attempted to access {data_type} for {ticker})"
+        )
 
     if period:
         data_path = os.path.join(
@@ -255,7 +225,7 @@ def get_simfin_balance_sheet(
 
     # Check if there are any available reports; if not, return a notification
     if filtered_df.empty:
-        print("No balance sheet available before the given current date.")
+        logger.info("No balance sheet available before the given current date.")
         return ""
 
     # Get the most recent balance sheet by selecting the row with the latest Publish Date
@@ -302,7 +272,7 @@ def get_simfin_cashflow(
 
     # Check if there are any available reports; if not, return a notification
     if filtered_df.empty:
-        print("No cash flow statement available before the given current date.")
+        logger.info("No cash flow statement available before the given current date.")
         return ""
 
     # Get the most recent cash flow statement by selecting the row with the latest Publish Date
@@ -349,7 +319,7 @@ def get_simfin_income_statements(
 
     # Check if there are any available reports; if not, return a notification
     if filtered_df.empty:
-        print("No income statement available before the given current date.")
+        logger.info("No income statement available before the given current date.")
         return ""
 
     # Get the most recent income statement by selecting the row with the latest Publish Date
@@ -390,6 +360,13 @@ def get_reddit_global_news(
 
     total_iterations = (curr_date_dt - curr_iter_date).days + 1
     pbar = tqdm(desc=f"Getting Global News on {curr_date}", total=total_iterations)
+
+    # Check if DATA_DIR is configured
+    if DATA_DIR is None:
+        pbar.close()
+        raise FileNotFoundError(
+            "Local data directory not configured. Set 'data_dir' in config to use local Reddit data."
+        )
 
     while curr_iter_date <= curr_date_dt:
         curr_date_str = curr_iter_date.strftime("%Y-%m-%d")
@@ -445,6 +422,13 @@ def get_reddit_company_news(
         desc=f"Getting Company News for {query} from {start_date} to {end_date}",
         total=total_iterations,
     )
+
+    # Check if DATA_DIR is configured
+    if DATA_DIR is None:
+        pbar.close()
+        raise FileNotFoundError(
+            f"Local data directory not configured. Set 'data_dir' in config to use local Reddit data for {query}."
+        )
 
     while curr_date <= end_date_dt:
         curr_date_str = curr_date.strftime("%Y-%m-%d")

@@ -1,0 +1,40 @@
+//@version=6
+// ATR Momentum Oscillator — impulse pane for the Swing Regime Toolkit.
+// Add to the SAME chart as swing-regime-overlay.pine + swing-regime-rsi-stack.pine + swing-regime-capital-flow.pine.
+indicator("ATR Momentum Oscillator [Swing Regime]", overlay = false, max_labels_count = 200)
+
+gStar = "Exhaustion Stars"
+starLeft = input.int(3, "Star pivot left", minval = 1, group = gStar)
+starRight = input.int(3, "Star pivot right", minval = 1, group = gStar)
+oversold = input.float(36.0, "Oversold RSI (cyan setup)", minval = 5, maxval = 50, group = gStar)
+overbought = input.float(68.0, "Overbought RSI (magenta trim)", minval = 50, maxval = 95, group = gStar)
+showStars = input.bool(true, "Exhaustion stars (setup / trim)", group = gStar)
+
+gMom = "Momentum"
+momFast = input.int(12, "MACD fast length", minval = 2, group = gMom)
+momSlow = input.int(26, "MACD slow length", minval = 2, group = gMom)
+sigLen = input.int(9, "MACD signal length", minval = 2, group = gMom)
+
+atr = ta.atr(14)
+momRaw = ta.ema(close, momFast) - ta.ema(close, momSlow)
+mom = atr == 0 ? 0.0 : momRaw / atr
+sig = ta.ema(mom, sigLen)
+
+rsiF = ta.rsi(close, 5)
+rsiM = ta.rsi(close, 14)
+stackLow = rsiF < oversold
+stackHigh = rsiF > overbought and rsiM > overbought - 8.0
+pl = ta.pivotlow(low, starLeft, starRight)
+ph = ta.pivothigh(high, starLeft, starRight)
+cyanStarHit = showStars and not na(pl) and stackLow[starRight]
+magStarHit = showStars and not na(ph) and stackHigh[starRight]
+
+goldCol = color.new(#c9a227, 50)
+greyCol = color.new(#4b5563, 50)
+fillCol = mom >= 0 ? goldCol : greyCol
+
+plot(mom, "ATR MACD", color = fillCol, style = plot.style_area, linewidth = 1)
+plot(sig, "ATR MACD signal", color = color.new(#d4af37, 15), linewidth = 1)
+plot(0, "Zero", color = color.new(#9ca3af, 40), linewidth = 1)
+plotchar(cyanStarHit, title = "Exhaustion low (setup)", char = "★", location = location.bottom, color = color.new(#22d3ee, 0), size = size.tiny, offset = -starRight)
+plotchar(magStarHit, title = "Exhaustion high (trim)", char = "★", location = location.top, color = color.new(#e879f9, 0), size = size.tiny, offset = -starRight)

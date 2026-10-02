@@ -1,0 +1,201 @@
+//@version=6
+// Regime & Structure Overlay — price pane for the Swing Regime Toolkit (1W / 1D / 1h).
+// Visual analogue of invite-only Black/Gold suite styling; not the original formulas.
+// Add with swing-regime-momentum.pine, swing-regime-rsi-stack.pine, swing-regime-capital-flow.pine.
+indicator("Regime & Structure Overlay [Swing Regime]", overlay = true, max_labels_count = 300, max_lines_count = 200, max_boxes_count = 40)
+
+gCore = "Core"
+gVis = "Visuals"
+gStyle = "Regime Colors & Opacity"
+gSwing = "Swing Range Box"
+gStar = "Exhaustion Stars"
+
+controlLen = input.int(100, "Control line EMA", minval = 10, group = gCore)
+keltnerLen = input.int(20, "Outer envelope EMA length", minval = 5, group = gCore)
+keltnerMult = input.float(1.6, "Outer envelope ATR mult", minval = 0.5, step = 0.1, group = gCore)
+
+showSwingBox = input.bool(true, "Show swing range boxes", group = gSwing)
+swingPivot = input.int(5, "Pivot length", minval = 2, group = gSwing)
+swingCouple = input.int(20, "Max bars between pivots", minval = 4, group = gSwing)
+swingConfirm = input.int(1, "Break confirm bars", minval = 1, group = gSwing)
+swingBoxBorderColor = input.color(color.new(#86efac, 70), "Border color", group = gSwing)
+swingBoxFillColor = input.color(color.new(#22c55e, 94), "Fill color", group = gSwing)
+swingBoxBorderWidth = input.int(1, "Border width", minval = 1, maxval = 4, group = gSwing)
+swingBoxBorderStyle = input.string("Solid", "Border style", options = ["Solid", "Dashed", "Dotted"], group = gSwing)
+swingBoxExtend = input.string("None", "Extend box", options = ["None", "Right", "Left", "Both"], group = gSwing)
+swingBoxForwardBars = input.int(8, "Forward bars (right edge)", minval = 0, maxval = 100, tooltip = "How far the box projects past the current bar.", group = gSwing)
+starLeft = input.int(3, "Star pivot left", minval = 1, group = gStar)
+starRight = input.int(3, "Star pivot right", minval = 1, group = gStar)
+oversold = input.float(36.0, "Oversold RSI (cyan setup)", minval = 5, maxval = 50, group = gStar)
+overbought = input.float(68.0, "Overbought RSI (magenta trim)", minval = 50, maxval = 95, group = gStar)
+cyanStarColor = input.color(color.new(#22d3ee, 48), "Setup star (cyan)", group = gStar)
+magStarColor = input.color(color.new(#e879f9, 48), "Trim star (magenta)", group = gStar)
+starSizeIn = input.string("Tiny", "Star size", options = ["Tiny", "Small", "Normal"], group = gStar)
+
+showBand = input.bool(true, "Regime band (EMA 8–30)", group = gVis)
+showStack = input.bool(true, "MA Stack", group = gVis)
+showControl = input.bool(true, "Control Line", group = gVis)
+showStars = input.bool(true, "Exhaustion stars (setup / trim)", group = gVis)
+showPlus = input.bool(true, "Trend + / − marks", group = gVis)
+colorBars = input.bool(true, "Regime candles (bull / bear)", group = gVis)
+showVol = input.bool(false, "Volume regime columns (Style → move to pane)", group = gVis)
+
+bullColor = input.color(#c9a227, "Bull regime color", group = gStyle)
+bearColor = input.color(#6b7280, "Bear regime color", group = gStyle)
+controlColor = input.color(color.new(#7f1d1d, 8), "Control line color", group = gStyle)
+bandFillTrans = input.int(92, "Regime band fill transparency", minval = 0, maxval = 100, tooltip = "Higher = more see-through. Default 92 is subtle.", group = gStyle)
+envelopeFillTrans = input.int(96, "Outer envelope fill transparency", minval = 0, maxval = 100, group = gStyle)
+bandLineTrans = input.int(20, "Regime band edge transparency", minval = 0, maxval = 100, group = gStyle)
+envelopeLineTrans = input.int(82, "Outer envelope line transparency", minval = 0, maxval = 100, group = gStyle)
+stackLineTrans = input.int(62, "MA stack line transparency", minval = 0, maxval = 100, group = gStyle)
+candleTintTrans = input.int(32, "Regime candle tint transparency", minval = 0, maxval = 100, tooltip = "Higher = candles stay closer to default green/red.", group = gStyle)
+volTrans = input.int(62, "Volume column transparency", minval = 0, maxval = 100, group = gStyle)
+markTrans = input.int(45, "Trend + / − transparency", minval = 0, maxval = 100, group = gStyle)
+
+f_lineStyle(styleName) =>
+    styleName == "Dashed" ? line.style_dashed : styleName == "Dotted" ? line.style_dotted : line.style_solid
+
+f_boxExtend(extendName) =>
+    extendName == "Right" ? extend.right : extendName == "Left" ? extend.left : extendName == "Both" ? extend.both : extend.none
+
+f_stackLine(baseColor, extraTrans) =>
+    color.new(baseColor, math.min(100, stackLineTrans + extraTrans))
+
+bullFill = color.new(bullColor, bandFillTrans)
+bearFill = color.new(bearColor, bandFillTrans)
+bullFillWide = color.new(bullColor, envelopeFillTrans)
+bearFillWide = color.new(bearColor, envelopeFillTrans)
+bullLine = color.new(bullColor, bandLineTrans)
+bearLine = color.new(bearColor, bandLineTrans)
+bullCandle = color.new(bullColor, candleTintTrans)
+bearCandle = color.new(bearColor, candleTintTrans)
+
+e3 = ta.ema(close, 3)
+e5 = ta.ema(close, 5)
+e8 = ta.ema(close, 8)
+e10 = ta.ema(close, 10)
+e12 = ta.ema(close, 12)
+e15 = ta.ema(close, 15)
+e21 = ta.ema(close, 21)
+e30 = ta.ema(close, 30)
+e35 = ta.ema(close, 35)
+e40 = ta.ema(close, 40)
+e50 = ta.ema(close, 50)
+e60 = ta.ema(close, 60)
+control = ta.ema(close, controlLen)
+
+shortTermUp = e8 > e30
+broaderUp = close > control
+var bool regimeGold = false
+if shortTermUp and broaderUp
+    regimeGold := true
+else if not shortTermUp and not broaderUp
+    regimeGold := false
+
+basis = ta.ema(close, keltnerLen)
+atrK = ta.atr(keltnerLen)
+uUpper = basis + keltnerMult * atrK
+uLower = basis - keltnerMult * atrK
+
+rsiF = ta.rsi(close, 5)
+rsiM = ta.rsi(close, 14)
+stackLow = rsiF < oversold
+stackHigh = rsiF > overbought and rsiM > overbought - 8.0
+
+pl = ta.pivotlow(low, starLeft, starRight)
+ph = ta.pivothigh(high, starLeft, starRight)
+cyanStarHit = showStars and not na(pl) and stackLow[starRight]
+magStarHit = showStars and not na(ph) and stackHigh[starRight]
+
+plusHit = showPlus and regimeGold and close > open and rsiM > 52.0
+minusHit = showPlus and not regimeGold and close < open and rsiM < 48.0
+
+plot(showStack ? e3 : na, "MA 3", color = f_stackLine(bullColor, 8), linewidth = 1)
+plot(showStack ? e5 : na, "MA 5", color = f_stackLine(bullColor, 3), linewidth = 1)
+p8 = plot(showBand ? e8 : na, "Regime band fast", color = regimeGold ? bullLine : bearLine, linewidth = 2)
+plot(showStack ? e10 : na, "MA 10", color = f_stackLine(#d4af37, 2), linewidth = 1)
+plot(showStack ? e12 : na, "MA 12", color = f_stackLine(#d4af37, 7), linewidth = 1)
+plot(showStack ? e15 : na, "MA 15", color = f_stackLine(#d4af37, 12), linewidth = 1)
+plot(showStack ? e21 : na, "MA 21", color = f_stackLine(#b45309, 17), linewidth = 1)
+p30 = plot(showBand ? e30 : na, "Regime band mid", color = regimeGold ? color.new(bullColor, bandLineTrans + 5) : bearLine, linewidth = 2)
+plot(showStack ? e35 : na, "MA 35", color = f_stackLine(#9ca3af, 12), linewidth = 1)
+plot(showStack ? e40 : na, "MA 40", color = f_stackLine(#9ca3af, 17), linewidth = 1)
+plot(showStack ? e50 : na, "MA 50", color = f_stackLine(#9ca3af, 22), linewidth = 1)
+plot(showStack ? e60 : na, "MA 60", color = f_stackLine(#6b7280, 27), linewidth = 1)
+plot(showControl ? control : na, "Control Line", color = controlColor, linewidth = 3)
+
+fill(p8, p30, color = showBand ? (regimeGold ? bullFill : bearFill) : na, title = "Regime band fill")
+pUp = plot(showBand ? uUpper : na, "Outer envelope hi", color = color.new(regimeGold ? bullColor : bearColor, envelopeLineTrans), linewidth = 1)
+pDn = plot(showBand ? uLower : na, "Outer envelope lo", color = color.new(regimeGold ? bullColor : bearColor, envelopeLineTrans), linewidth = 1)
+fill(pUp, pDn, color = showBand ? (regimeGold ? bullFillWide : bearFillWide) : na, title = "Outer envelope fill")
+
+barcolor(colorBars ? (regimeGold ? bullCandle : bearCandle) : na, title = "Regime candles")
+plot(showVol ? volume : na, "Vol", color = regimeGold ? color.new(bullColor, volTrans) : color.new(bearColor, volTrans), style = plot.style_columns, format = format.volume)
+
+// plotchar size must be a compile-time constant — branch on starSizeIn instead.
+plotchar(cyanStarHit and starSizeIn == "Tiny", title = "Exhaustion low (setup)", char = "★", location = location.belowbar, color = cyanStarColor, size = size.tiny, offset = -starRight)
+plotchar(cyanStarHit and starSizeIn == "Small", title = "Exhaustion low (setup)", char = "★", location = location.belowbar, color = cyanStarColor, size = size.small, offset = -starRight)
+plotchar(cyanStarHit and starSizeIn == "Normal", title = "Exhaustion low (setup)", char = "★", location = location.belowbar, color = cyanStarColor, size = size.normal, offset = -starRight)
+plotchar(magStarHit and starSizeIn == "Tiny", title = "Exhaustion high (trim)", char = "★", location = location.abovebar, color = magStarColor, size = size.tiny, offset = -starRight)
+plotchar(magStarHit and starSizeIn == "Small", title = "Exhaustion high (trim)", char = "★", location = location.abovebar, color = magStarColor, size = size.small, offset = -starRight)
+plotchar(magStarHit and starSizeIn == "Normal", title = "Exhaustion high (trim)", char = "★", location = location.abovebar, color = magStarColor, size = size.normal, offset = -starRight)
+plotchar(plusHit, title = "Trend Plus", char = "+", location = location.abovebar, color = color.new(#f8fafc, markTrans), size = size.tiny)
+plotchar(minusHit, title = "Trend Minus", char = "-", location = location.belowbar, color = color.new(#f8fafc, markTrans + 10), size = size.tiny)
+
+phC = ta.pivothigh(high, swingPivot, swingPivot)
+plC = ta.pivotlow(low, swingPivot, swingPivot)
+var float lastPh = na
+var float lastPl = na
+var int lastPhBar = na
+var int lastPlBar = na
+var int breakUpCount = 0
+var int breakDnCount = 0
+var box swingBox = na
+
+if not na(phC)
+    lastPh := phC
+    lastPhBar := bar_index - swingPivot
+if not na(plC)
+    lastPl := plC
+    lastPlBar := bar_index - swingPivot
+
+if not na(lastPhBar) and not na(lastPlBar) and math.abs(lastPhBar - lastPlBar) > swingCouple
+    if lastPhBar < lastPlBar
+        lastPh := na
+        lastPhBar := na
+    else
+        lastPl := na
+        lastPlBar := na
+
+pairReady = not na(lastPh) and not na(lastPl) and not na(lastPhBar) and not na(lastPlBar)
+if pairReady
+    breakUpCount := close > lastPh ? breakUpCount + 1 : 0
+    breakDnCount := close < lastPl ? breakDnCount + 1 : 0
+    if (breakUpCount >= swingConfirm or breakDnCount >= swingConfirm) and barstate.isconfirmed
+        lastPh := na
+        lastPl := na
+        lastPhBar := na
+        lastPlBar := na
+        breakUpCount := 0
+        breakDnCount := 0
+        if not na(swingBox)
+            box.delete(swingBox)
+        swingBox := na
+else
+    breakUpCount := 0
+    breakDnCount := 0
+
+boxLive = not na(lastPh) and not na(lastPl) and not na(lastPhBar) and not na(lastPlBar)
+if showSwingBox and boxLive and barstate.isconfirmed
+    if not na(swingBox)
+        box.delete(swingBox)
+    swingBox := box.new(
+         math.min(lastPhBar, lastPlBar),
+         lastPh,
+         bar_index + swingBoxForwardBars,
+         lastPl,
+         border_color = swingBoxBorderColor,
+         bgcolor = swingBoxFillColor,
+         border_width = swingBoxBorderWidth,
+         border_style = f_lineStyle(swingBoxBorderStyle),
+         extend = f_boxExtend(swingBoxExtend))

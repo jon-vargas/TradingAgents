@@ -1,5 +1,8 @@
+import logging
 import time
 import json
+
+logger = logging.getLogger("tradingagents.agents.managers.research_manager")
 
 
 def create_research_manager(llm, memory):
@@ -19,13 +22,69 @@ def create_research_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        # Quantitative signal summary (analyst signals only — excludes
+        # Research and Trading Plan which don't exist yet at this stage)
+        signal_summary_text = ""
+        try:
+            from tradingagents.graph.signal_aggregator import compute_signal_summary
+            from tradingagents.dataflows.config import get_config
+            config = get_config()
+            data_completeness = config.get("data_completeness", 1.0)
+            company_name = state["company_of_interest"]
+            signal_result = compute_signal_summary(
+                state, company_name,
+                exclude_sections={"Research", "Trading Plan"},
+                data_completeness=data_completeness,
+            )
+            signal_summary_text = signal_result.get("text_block", "")
+        except Exception as e:
+            logger.warning("Signal summary unavailable for Research Manager: %s", e)
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+        # Source data reference appendix
+        source_data_ref = ""
+        try:
+            from tradingagents.agents.managers.risk_manager import _build_source_data_reference
+            source_data_ref = _build_source_data_reference(state)
+        except Exception as e:
+            logger.debug("Source data reference unavailable: %s", e)
+
+        # Investment profile directive (if provided)
+        profile = state.get("investment_profile") or {}
+        manager_focus = profile.get("research_manager_focus", "")
+        profile_block = ""
+        if manager_focus:
+            profile_block = (
+                f"\n📋 **INVESTMENT PROFILE FOCUS** ({profile.get('display_name', 'Default')}):\n"
+                f"{manager_focus}\n"
+                "Apply these decision criteria throughout your evaluation.\n\n"
+            )
+
+        signal_block = ""
+        if signal_summary_text:
+            signal_block = f"\n{signal_summary_text}\n"
+
+        screening_block = ""
+        screening_text = state.get("screening_summary_text") or ""
+        if screening_text:
+            screening_block = (
+                f"\n📊 **SCREENING CONTEXT** (from pre-analysis screener):\n"
+                f"{screening_text}\n"
+                "Treat this as prior quantitative ranking context — reconcile with your own analysis.\n"
+            )
+
+        source_block = ""
+        if source_data_ref:
+            source_block = f"\n{source_data_ref}\n"
+
+        prompt = f"""As the Research Manager and debate facilitator, your role is to critically evaluate this round of debate and deliver a clear investment plan for the trader.
+{profile_block}{screening_block}{signal_block}
+Commit to **BUY** or **SELL** only when the debate's strongest arguments clearly warrant a change in exposure. Choose **HOLD** when evidence is balanced, materially conflicting, ambiguous, or insufficient; do not manufacture a direction to appear decisive. Weigh the bull and bear cases on their merits, independent of which side spoke first or last.
+
+Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable.
 
 Additionally, develop a detailed investment plan for the trader. This should include:
 
-Your Recommendation: A decisive stance supported by the most convincing arguments.
+Your Recommendation: A stance supported by the most convincing arguments.
 Rationale: An explanation of why these arguments lead to your conclusion.
 Strategic Actions: Concrete steps for implementing the recommendation.
 Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
@@ -35,7 +94,11 @@ Here are your past reflections on mistakes:
 
 Here is the debate:
 Debate History:
-{history}"""
+{history}
+{source_block}
+Start your decision with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** on its own line, then immediately this SIGNAL_JSON line, then the reasoning:
+SIGNAL_JSON: {{"section":"Research","stance":"bullish|bearish|neutral","confidence":0.75,"key_factors":["factor1","factor2"]}}
+Use the 0.0 to 1.0 scale for confidence (e.g. 0.75 = 75% confident). Never omit these two leading lines."""
         response = llm.invoke(prompt)
 
         new_investment_debate_state = {

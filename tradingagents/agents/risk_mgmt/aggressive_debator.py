@@ -1,22 +1,44 @@
+import logging
 import time
 import json
+
+from tradingagents.utils.token_management import truncate_to_token_limit
+
+logger = logging.getLogger("tradingagents.agents.risk_mgmt.aggressive_debator")
+
+_REPORT_TOKEN_LIMIT = 2500
+_HISTORY_TOKEN_LIMIT = 4000
 
 
 def create_risky_debator(llm):
     def risky_node(state) -> dict:
         risk_debate_state = state["risk_debate_state"]
-        history = risk_debate_state.get("history", "")
+        history = truncate_to_token_limit(risk_debate_state.get("history", ""), _HISTORY_TOKEN_LIMIT)
         risky_history = risk_debate_state.get("risky_history", "")
 
         current_safe_response = risk_debate_state.get("current_safe_response", "")
         current_neutral_response = risk_debate_state.get("current_neutral_response", "")
 
-        market_research_report = state["market_report"]
-        sentiment_report = state["sentiment_report"]
-        news_report = state["news_report"]
-        fundamentals_report = state["fundamentals_report"]
+        market_research_report = truncate_to_token_limit(state["market_report"], _REPORT_TOKEN_LIMIT)
+        sentiment_report = truncate_to_token_limit(state["sentiment_report"], _REPORT_TOKEN_LIMIT)
+        news_report = truncate_to_token_limit(state["news_report"], _REPORT_TOKEN_LIMIT)
+        fundamentals_report = truncate_to_token_limit(state["fundamentals_report"], _REPORT_TOKEN_LIMIT)
 
-        trader_decision = state["trader_investment_plan"]
+        trader_decision = truncate_to_token_limit(state["trader_investment_plan"], 3000)
+
+        # Fetch quantitative risk metrics for data-driven arguments
+        risk_context = ""
+        options_context = ""
+        try:
+            from tradingagents.dataflows.yfinance_extended import format_risk_context, format_options_context
+            risk_context = format_risk_context(state["company_of_interest"])
+            options_context = format_options_context(state["company_of_interest"])
+        except Exception as e:
+            logger.debug("Risk/options data unavailable for risky debater: %s", e)
+
+        quant_block = ""
+        if risk_context or options_context:
+            quant_block = f"\n\nQuantitative Risk Data (use these numbers in your arguments):\n{risk_context}\n{options_context}"
 
         prompt = f"""As the Risky Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk. Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Here is the trader's decision:
 
@@ -27,8 +49,8 @@ Your task is to create a compelling case for the trader's decision by questionin
 Market Research Report: {market_research_report}
 Social Media Sentiment Report: {sentiment_report}
 Latest World Affairs Report: {news_report}
-Company Fundamentals Report: {fundamentals_report}
-Here is the current conversation history: {history} Here are the last arguments from the conservative analyst: {current_safe_response} Here are the last arguments from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints, do not halluncinate and just present your point.
+Company Fundamentals Report: {fundamentals_report}{quant_block}
+Here is the current conversation history: {history} Here are the last arguments from the conservative analyst: {current_safe_response} Here are the last arguments from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints, do not hallucinate and just present your point.
 
 Engage actively by addressing any specific concerns raised, refuting the weaknesses in their logic, and asserting the benefits of risk-taking to outpace market norms. Maintain a focus on debating and persuading, not just presenting data. Challenge each counterpoint to underscore why a high-risk approach is optimal. Output conversationally as if you are speaking without any special formatting."""
 

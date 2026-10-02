@@ -1,0 +1,24 @@
+{
+  "company_of_interest": "ASTS",
+  "trade_date": "2026-01-27",
+  "market_report": "Analysis Report for ASTS: price ranged around 104.78 with strong momentum. MACD is positive and RSI is near 57.\nSIGNAL_JSON: {\"section\":\"Market\",\"stance\":\"bullish\",\"confidence\":0.6,\"key_factors\":[\"Momentum positive\",\"RSI supportive\"]}",
+  "fundamentals_report": "Current stock price: $104.78. Early-stage business with limited revenue and high cash burn.\nSIGNAL_JSON: {\"section\":\"Fundamentals\",\"stance\":\"bearish\",\"confidence\":0.7,\"key_factors\":[\"High burn\",\"Limited revenue\"]}",
+  "news_report": "No material company updates during the past week.\nSIGNAL_JSON: {\"section\":\"News\",\"stance\":\"neutral\",\"confidence\":0.4,\"key_factors\":[\"No catalysts\"]}",
+  "sentiment_report": "Speculative interest remains elevated despite limited catalysts.\nSIGNAL_JSON: {\"section\":\"Sentiment\",\"stance\":\"bullish\",\"confidence\":0.55,\"key_factors\":[\"Speculative interest\"]}",
+  "investment_plan": "Bull Analyst: (1) Long-term satellite connectivity demand. BUY case focuses on strategic upside. Bear Analyst: (1) Funding risk and uncertain execution. SELL case focuses on dilution risk.\nSIGNAL_JSON: {\"section\":\"Research\",\"stance\":\"bearish\",\"confidence\":0.6,\"key_factors\":[\"Funding risk\",\"Execution uncertainty\"]}",
+  "trader_investment_plan": "Use disciplined risk management for volatility. SELL if financing risk accelerates.\nSIGNAL_JSON: {\"section\":\"Trading Plan\",\"stance\":\"bearish\",\"confidence\":0.6,\"key_factors\":[\"Risk control\",\"Financing risk\"]}",
+  "final_trade_decision": "Recommendation: SELL (reduce or exit).",
+  "investment_debate_state": {
+    "bull_history": "Bull Analyst: Significant long-term upside if milestones are achieved.",
+    "bear_history": "Bear Analyst: Valuation is stretched and dilution risk is material.",
+    "history": "Bull Analyst: Long-term upside. Bear Analyst: Near-term risks.",
+    "current_response": "",
+    "judge_decision": "SELL"
+  },
+  "risk_debate_state": {
+    "risky_history": "Risky Analyst: Upside optionality exists, but sizing must be tight.",
+    "neutral_history": "Neutral Analyst: Reduce exposure and monitor for confirmation.",
+    "safe_history": "Safe Analyst: Protect capital until revenues and timelines improve.",
+    "history": "Risky Analyst: Optionality. Safe Analyst: Preserve capital. Neutral Analyst: Trim."
+  }
+}

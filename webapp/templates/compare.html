@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Reports - TradingAgents{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Compare Reports</h1>
+  <p class="text-muted">Side-by-side comparison of two analysis reports</p>
+</div>
+
+<!-- Selection Form -->
+<div class="card" data-collapsible data-collapse-id="cmp-select" style="margin-bottom: var(--spacing-6);">
+  <div class="card-header">
+    <h3>Select Reports to Compare</h3>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-6);">
+      <!-- Report A -->
+      <div>
+        <label class="form-label">Report A</label>
+        <select id="report-a" class="form-select">
+          <option value="">Select a report...</option>
+        </select>
+        <div id="report-a-info" class="text-muted" style="margin-top: var(--spacing-2); font-size: var(--text-sm);"></div>
+      </div>
+      <!-- Report B -->
+      <div>
+        <label class="form-label">Report B</label>
+        <select id="report-b" class="form-select">
+          <option value="">Select a report...</option>
+        </select>
+        <div id="report-b-info" class="text-muted" style="margin-top: var(--spacing-2); font-size: var(--text-sm);"></div>
+      </div>
+    </div>
+    <div style="margin-top: var(--spacing-4);">
+      <button id="compare-btn" class="btn btn-primary" disabled>
+        Compare Reports
+      </button>
+      <span id="compare-status" class="text-muted" style="margin-left: var(--spacing-3);"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison Results -->
+<div id="comparison-results" style="display: none;">
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h3>Comparison Results</h3>
+      <div id="diff-summary" class="text-muted"></div>
+    </div>
+    <div class="card-body">
+      <!-- Side by Side View -->
+      <div id="side-by-side" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-4);">
+        <div>
+          <h4 id="report-a-title" style="margin-bottom: var(--spacing-3);">Report A</h4>
+          <div id="report-a-content" class="report-viewer" style="max-height: 600px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: var(--spacing-4);"></div>
+        </div>
+        <div>
+          <h4 id="report-b-title" style="margin-bottom: var(--spacing-3);">Report B</h4>
+          <div id="report-b-content" class="report-viewer" style="max-height: 600px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: var(--spacing-4);"></div>
+        </div>
+      </div>
+      
+      <!-- Diff View -->
+      <div style="margin-top: var(--spacing-6);">
+        <h4 style="margin-bottom: var(--spacing-3);">Changes Detected</h4>
+        <div id="diff-view" style="border: 1px solid var(--border); border-radius: var(--radius); padding: var(--spacing-4); background: var(--bg-secondary); font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div id="empty-state" class="empty-state">
+  <div class="empty-state-icon">⚖️</div>
+  <h3>Select Two Reports to Compare</h3>
+  <p>Choose reports from the dropdowns above to see a side-by-side comparison with highlighted differences.</p>
+</div>
+
+<style>
+  .diff-add {
+    background-color: var(--qa-green-bg);
+    color: var(--qa-green);
+  }
+  .diff-remove {
+    background-color: var(--qa-red-bg);
+    color: var(--qa-red);
+  }
+  .diff-change {
+    background-color: var(--qa-amber-bg);
+    color: var(--qa-amber);
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const reportA = document.getElementById('report-a');
+  const reportB = document.getElementById('report-b');
+  const compareBtn = document.getElementById('compare-btn');
+  const compareStatus = document.getElementById('compare-status');
+  const resultsDiv = document.getElementById('comparison-results');
+  const emptyState = document.getElementById('empty-state');
+  
+  // Load analyses for dropdowns
+  try {
+    const resp = await fetch('/api/analyses?limit=100');
+    const analyses = await resp.json();
+    
+    analyses.forEach(a => {
+      const option = `<option value="${a.id}">${a.ticker} - ${a.analysis_date} (${a.decision})</option>`;
+      reportA.insertAdjacentHTML('beforeend', option);
+      reportB.insertAdjacentHTML('beforeend', option);
+    });
+  } catch (err) {
+    compareStatus.textContent = 'Error loading analyses';
+  }
+  
+  // Enable compare button when both selected
+  function checkSelection() {
+    compareBtn.disabled = !reportA.value || !reportB.value || reportA.value === reportB.value;
+  }
+  
+  reportA.addEventListener('change', async () => {
+    checkSelection();
+    if (reportA.value) {
+      const info = await getAnalysisInfo(reportA.value);
+      document.getElementById('report-a-info').textContent = info;
+    }
+  });
+  
+  reportB.addEventListener('change', async () => {
+    checkSelection();
+    if (reportB.value) {
+      const info = await getAnalysisInfo(reportB.value);
+      document.getElementById('report-b-info').textContent = info;
+    }
+  });
+  
+  async function getAnalysisInfo(id) {
+    try {
+      const resp = await fetch(`/api/analyses/${id}`);
+      const data = await resp.json();
+      return `Confidence: ${(data.confidence * 100).toFixed(1)}% | Quality: ${data.data_quality_score || 0}`;
+    } catch {
+      return '';
+    }
+  }
+  
+  // Compare button click
+  compareBtn.addEventListener('click', async () => {
+    compareBtn.disabled = true;
+    compareBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:8px;"></span> Comparing...';
+    compareStatus.textContent = 'Loading reports...';
+    
+    try {
+      // Fetch both reports
+      const [respA, respB] = await Promise.all([
+        fetch(`/api/reports/${reportA.value}`),
+        fetch(`/api/reports/${reportB.value}`)
+      ]);
+      
+      const [dataA, dataB] = await Promise.all([
+        respA.json(),
+        respB.json()
+      ]);
+      
+      // Fetch analysis metadata
+      const [metaA, metaB] = await Promise.all([
+        fetch(`/api/analyses/${reportA.value}`).then(r => r.json()),
+        fetch(`/api/analyses/${reportB.value}`).then(r => r.json())
+      ]);
+      
+      // Display reports
+      document.getElementById('report-a-title').textContent = 
+        `${metaA.ticker} - ${metaA.analysis_date}`;
+      document.getElementById('report-b-title').textContent = 
+        `${metaB.ticker} - ${metaB.analysis_date}`;
+      
+      document.getElementById('report-a-content').innerHTML = dataA.html || 'No content';
+      document.getElementById('report-b-content').innerHTML = dataB.html || 'No content';
+      
+      // Call diff endpoint
+      compareStatus.textContent = 'Computing differences...';
+      const diffResp = await fetch(`/api/report-diff?file_a=${metaA.ticker}_${metaA.analysis_date}_report.html&file_b=${metaB.ticker}_${metaB.analysis_date}_report.html`);
+      const diffData = await diffResp.json();
+      
+      // Display diff
+      const diffView = document.getElementById('diff-view');
+      if (diffData.diff) {
+        diffView.innerHTML = formatDiff(diffData.diff);
+        document.getElementById('diff-summary').textContent = 'Differences highlighted below';
+      } else {
+        diffView.textContent = 'No differences detected or reports are identical.';
+      }
+      
+      // Show results
+      resultsDiv.style.display = 'block';
+      emptyState.style.display = 'none';
+      compareStatus.textContent = '';
+      
+    } catch (err) {
+      compareStatus.textContent = `Error: ${err.message}`;
+    }
+    
+    compareBtn.disabled = false;
+    compareBtn.innerHTML = 'Compare Reports';
+  });
+  
+  function formatDiff(diffText) {
+    if (!diffText) return 'No differences';
+    
+    return diffText
+      .split('\n')
+      .map(line => {
+        if (line.startsWith('+') && !line.startsWith('+++')) {
+          return `<span class="diff-add">${escapeHtml(line)}</span>`;
+        } else if (line.startsWith('-') && !line.startsWith('---')) {
+          return `<span class="diff-remove">${escapeHtml(line)}</span>`;
+        } else if (line.startsWith('@@')) {
+          return `<span class="diff-change">${escapeHtml(line)}</span>`;
+        }
+        return escapeHtml(line);
+      })
+      .join('\n');
+  }
+  
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+});
+</script>
+{% endblock %}

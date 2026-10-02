@@ -1,0 +1,2000 @@
+{
+  "run_ids": {
+    "Russell 2000 Top 100:short_squeeze": 1386,
+    "S&P 500 Top 100:earnings_play": 1387,
+    "S&P 500 Top 100:value_fisher": 1388,
+    "Dividend Aristocrats Top 50:quality_compounder": 1389,
+    "S&P 500 Top 100:long_horizon_12to36m": 1390
+  },
+  "analyses": [
+    {
+      "preset": "short_squeeze",
+      "n": 80,
+      "gated_last": 52,
+      "avg_score": 28.991125,
+      "top_avg": 43.895833333333336,
+      "directions": {
+        "bullish": 80
+      },
+      "avg_coverage": 51.725,
+      "sleeve_top": 0.3853138888888889,
+      "sleeve_bottom": 0.2826673611111111,
+      "twelve_one": {
+        "n": 79,
+        "none": 1,
+        "zero": 0,
+        "mean": 0.4999924050632911
+      },
+      "valuation_gap": {
+        "n": 44,
+        "none": 36,
+        "zero": 0,
+        "mean": 0.4999727272727273
+      },
+      "income_factor": {
+        "n": 18,
+        "none": 62,
+        "zero": 0,
+        "mean": 0.5
+      },
+      "top12": [
+        {
+          "rank": 1,
+          "ticker": "RNA",
+          "score": 53.85,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 26.93,
+          "sleeve": 0.5912,
+          "quality": null,
+          "value": 89.4,
+          "income": null,
+          "flow": 50.0,
+          "mom": 37.3,
+          "tier": "tier2_aux",
+          "signals": {
+            "short_pressure": 1.0,
+            "volume_surge": 0.3247,
+            "options_sentiment": null,
+            "relative_strength": 0.4489
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "CBRL",
+          "score": 51.21,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 58.95,
+          "sleeve": 0.483775,
+          "quality": 23.9,
+          "value": 27.0,
+          "income": 42.0,
+          "flow": 51.7,
+          "mom": 47.1,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 1.0,
+            "volume_surge": 0.0276,
+            "options_sentiment": 0.35,
+            "relative_strength": 0.5575
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "CLBK",
+          "score": 45.87,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 34.11,
+          "sleeve": 0.384475,
+          "quality": 23.4,
+          "value": 18.7,
+          "income": 54.5,
+          "flow": 75.0,
+          "mom": 49.3,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 1.0,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.0,
+            "relative_strength": 0.5379
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "FSLY",
+          "score": 45.8,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 35.47,
+          "sleeve": 0.365725,
+          "quality": 56.4,
+          "value": 20.9,
+          "income": null,
+          "flow": 36.7,
+          "mom": 51.4,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.55,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.15,
+            "relative_strength": 0.7629
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "SMCI",
+          "score": 44.15,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 22.77,
+          "sleeve": 0.369475,
+          "quality": 42.8,
+          "value": 63.4,
+          "income": null,
+          "flow": 61.2,
+          "mom": 40.9,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.615,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.1,
+            "relative_strength": 0.7629
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "CORT",
+          "score": 42.14,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 65.17,
+          "sleeve": 0.31322500000000003,
+          "quality": 35.3,
+          "value": 38.0,
+          "income": null,
+          "flow": 39.7,
+          "mom": 51.3,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.39,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.1,
+            "relative_strength": 0.7629
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "ELF",
+          "score": 41.93,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 65.51,
+          "sleeve": 0.429375,
+          "quality": 53.8,
+          "value": 23.5,
+          "income": null,
+          "flow": 36.1,
+          "mom": 41.6,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.534,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.5,
+            "relative_strength": 0.6835
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "EAT",
+          "score": 41.59,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 22.93,
+          "sleeve": 0.336775,
+          "quality": 22.2,
+          "value": 34.3,
+          "income": null,
+          "flow": 27.9,
+          "mom": 51.8,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.586,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.0,
+            "relative_strength": 0.7611
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "BBIO",
+          "score": 41.28,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 47.18,
+          "sleeve": 0.3113,
+          "quality": 83.2,
+          "value": 63.4,
+          "income": null,
+          "flow": 22.2,
+          "mom": 33.3,
+          "tier": "tier2_aux",
+          "signals": {
+            "short_pressure": 0.445,
+            "volume_surge": 0.1479,
+            "options_sentiment": null,
+            "relative_strength": 0.341
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "ASTS",
+          "score": 40.08,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 58.71,
+          "sleeve": 0.411625,
+          "quality": 48.3,
+          "value": 31.6,
+          "income": null,
+          "flow": 53.9,
+          "mom": 38.2,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.636,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.25,
+            "relative_strength": 0.7605
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "DOCS",
+          "score": 39.66,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 76.73,
+          "sleeve": 0.35315,
+          "quality": 55.0,
+          "value": 49.0,
+          "income": null,
+          "flow": 34.2,
+          "mom": 38.8,
+          "tier": "enhanced",
+          "signals": {
+            "short_pressure": 0.657,
+            "volume_surge": 0.0,
+            "options_sentiment": 0.15,
+            "relative_strength": 0.6056
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "DNLI",
+          "score": 39.19,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 72.06,
+          "sleeve": 0.27366666666666667,
+          "quality": null,
+          "value": 68.7,
+          "income": null,
+          "flow": 49.2,
+          "mom": 26.0,
+          "tier": "tier2_aux",
+          "signals": {
+            "short_pressure": 0.384,
+            "volume_surge": 0.0,
+            "options_sentiment": null,
+            "relative_strength": 0.437
+          }
+        }
+      ],
+      "signals": {
+        "relative_strength": {
+          "n": 80,
+          "none": 0,
+          "zero": 0,
+          "mean": 0.49998375
+        },
+        "ma_crossover": {
+          "n": 80,
+          "none": 0,
+          "zero": 29,
+          "mean": 0.446565
+        },
+        "trend_strength": {
+          "n": 80,
+          "none": 0,
+          "zero": 36,
+          "mean": 0.37625375
+        },
+        "volume_surge": {
+          "n": 80,
+          "none": 0,
+          "zero": 68,
+          "mean": 0.03063125
+        },
+        "quality_factor": {
+          "n": 42,
+          "none": 38,
+          "zero": 0,
+          "mean": 0.5000023809523809
+        },
+        "income_factor": {
+          "n": 18,
+          "none": 62,
+          "zero": 0,
+          "mean": 0.5
+        },
+        "valuation_gap": {
+          "n": 44,
+          "none": 36,
+          "zero": 0,
+          "mean": 0.4999727272727273
+        },
+        "estimate_momentum": {
+          "n": 80,
+          "none": 0,
+          "zero": 40,
+          "mean": 0.3462325
+        },
+        "rating_momentum": {
+          "n": 80,
+          "none": 0,
+          "zero": 32,
+          "mean": 0.299175
+        },
+        "pead_drift": {
+          "n": 0,
+          "none": 80,
+          "zero": 0,
+          "mean": null
+        },
+        "options_sentiment": {
+          "n": 24,
+          "none": 56,
+          "zero": 7,
+          "mean": 0.16666666666666666
+        },
+        "smart_money": {
+          "n": 22,
+          "none": 58,
+          "zero": 0,
+          "mean": 0.43420454545454545
+        },
+        "insider_buying": {
+          "n": 80,
+          "none": 0,
+          "zero": 66,
+          "mean": 0.11499999999999999
+        },
+        "earnings_proximity": {
+          "n": 3,
+          "none": 77,
+          "zero": 0,
+          "mean": 0.8277666666666667
+        },
+        "price_vs_target": {
+          "n": 80,
+          "none": 0,
+          "zero": 40,
+          "mean": 0.23328875
+        },
+        "weekly_trend_alignment": {
+          "n": 24,
+          "none": 56,
+          "zero": 0,
+          "mean": 0.7420833333333333
+        },
+        "residual_momentum_12_1": {
+          "n": 79,
+          "none": 1,
+          "zero": 0,
+          "mean": 0.4999924050632911
+        },
+        "short_pressure": {
+          "n": 46,
+          "none": 34,
+          "zero": 2,
+          "mean": 0.3307391304347826
+        }
+      },
+      "watchlist": "Russell 2000 Top 100",
+      "snapshot_run_id": 1375
+    },
+    {
+      "preset": "earnings_play",
+      "n": 100,
+      "gated_last": 94,
+      "avg_score": 26.5992,
+      "top_avg": 47.105000000000004,
+      "directions": {
+        "bullish": 93,
+        "neutral": 7
+      },
+      "avg_coverage": 42.11,
+      "sleeve_top": 0.647748611111111,
+      "sleeve_bottom": 0.5844555555555555,
+      "twelve_one": {
+        "n": 100,
+        "none": 0,
+        "zero": 8,
+        "mean": 0.477962
+      },
+      "valuation_gap": {
+        "n": 53,
+        "none": 47,
+        "zero": 11,
+        "mean": 0.3905245283018868
+      },
+      "income_factor": {
+        "n": 44,
+        "none": 56,
+        "zero": 0,
+        "mean": 0.5054954545454545
+      },
+      "top12": [
+        {
+          "rank": 1,
+          "ticker": "AVGO",
+          "score": 47.53,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 77.38,
+          "sleeve": 0.725,
+          "quality": 68.6,
+          "value": 68.5,
+          "income": 40.5,
+          "flow": 2.2,
+          "mom": 20.5,
+          "tier": "tier2_aux",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": 0.95,
+            "estimate_momentum": 0.5,
+            "options_sentiment": null
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "NVDA",
+          "score": 45.62,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 45.39,
+          "sleeve": 0.5376,
+          "quality": 30.3,
+          "value": 70.3,
+          "income": 40.5,
+          "flow": 10.4,
+          "mom": 33.9,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": 1.0,
+            "estimate_momentum": 0.5128,
+            "options_sentiment": 0.1
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "MDT",
+          "score": 43.53,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 46.06,
+          "sleeve": 0.48913333333333336,
+          "quality": 64.7,
+          "value": 40.6,
+          "income": 41.5,
+          "flow": 14.9,
+          "mom": 37.0,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": 0.9667,
+            "estimate_momentum": 0.5007,
+            "options_sentiment": 0.0
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "PANW",
+          "score": 42.57,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 47.85,
+          "sleeve": 0.5893666666666666,
+          "quality": 39.9,
+          "value": 18.9,
+          "income": null,
+          "flow": 21.2,
+          "mom": 39.3,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": 0.9667,
+            "estimate_momentum": 0.5014,
+            "options_sentiment": 0.3
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "MRVL",
+          "score": 42.33,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 46.08,
+          "sleeve": 0.6678,
+          "quality": 46.7,
+          "value": 24.5,
+          "income": 48.1,
+          "flow": 17.7,
+          "mom": 29.8,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": 1.0,
+            "estimate_momentum": 0.5034,
+            "options_sentiment": 0.5
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "CRWD",
+          "score": 40.89,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 53.72,
+          "sleeve": 0.49783333333333335,
+          "quality": 50.9,
+          "value": 18.9,
+          "income": null,
+          "flow": 16.8,
+          "mom": 41.3,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": 1.0,
+            "estimate_momentum": 0.4935,
+            "options_sentiment": 0.0
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "ANET",
+          "score": 58.77,
+          "dir": "bullish",
+          "gated": true,
+          "eq": 54.47,
+          "sleeve": 0.625,
+          "quality": 64.1,
+          "value": 43.6,
+          "income": null,
+          "flow": 55.4,
+          "mom": 47.1,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": null,
+            "estimate_momentum": 1.0,
+            "options_sentiment": 0.25
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "PLTR",
+          "score": 51.02,
+          "dir": "bullish",
+          "gated": true,
+          "eq": 35.95,
+          "sleeve": 0.7,
+          "quality": 29.4,
+          "value": 27.7,
+          "income": null,
+          "flow": 21.5,
+          "mom": 48.5,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": null,
+            "estimate_momentum": 1.0,
+            "options_sentiment": 0.4
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "UNH",
+          "score": 49.36,
+          "dir": "bullish",
+          "gated": true,
+          "eq": 43.41,
+          "sleeve": 1.0,
+          "quality": 53.9,
+          "value": 52.2,
+          "income": 49.6,
+          "flow": 3.1,
+          "mom": 27.2,
+          "tier": "tier2_aux",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": null,
+            "estimate_momentum": 1.0,
+            "options_sentiment": null
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "TXN",
+          "score": 48.49,
+          "dir": "bullish",
+          "gated": true,
+          "eq": 75.15,
+          "sleeve": 1.0,
+          "quality": 63.5,
+          "value": 38.9,
+          "income": 52.2,
+          "flow": 3.4,
+          "mom": 26.1,
+          "tier": "tier2_aux",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": null,
+            "estimate_momentum": 1.0,
+            "options_sentiment": null
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "BMY",
+          "score": 47.82,
+          "dir": "bullish",
+          "gated": true,
+          "eq": 78.83,
+          "sleeve": 0.5841,
+          "quality": 37.2,
+          "value": 41.9,
+          "income": 73.0,
+          "flow": 11.2,
+          "mom": 40.6,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": null,
+            "estimate_momentum": 0.8682,
+            "options_sentiment": 0.3
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "NEM",
+          "score": 47.33,
+          "dir": "bullish",
+          "gated": true,
+          "eq": 22.44,
+          "sleeve": 0.35714999999999997,
+          "quality": 90.8,
+          "value": 26.5,
+          "income": 30.0,
+          "flow": 15.6,
+          "mom": 62.5,
+          "tier": "enhanced",
+          "signals": {
+            "pead_drift": null,
+            "earnings_proximity": null,
+            "estimate_momentum": 0.2143,
+            "options_sentiment": 0.5
+          }
+        }
+      ],
+      "signals": {
+        "relative_strength": {
+          "n": 100,
+          "none": 0,
+          "zero": 17,
+          "mean": 0.418698
+        },
+        "ma_crossover": {
+          "n": 100,
+          "none": 0,
+          "zero": 38,
+          "mean": 0.329079
+        },
+        "trend_strength": {
+          "n": 100,
+          "none": 0,
+          "zero": 50,
+          "mean": 0.288198
+        },
+        "volume_surge": {
+          "n": 100,
+          "none": 0,
+          "zero": 93,
+          "mean": 0.0034549999999999997
+        },
+        "quality_factor": {
+          "n": 56,
+          "none": 44,
+          "zero": 0,
+          "mean": 0.5391732142857143
+        },
+        "income_factor": {
+          "n": 44,
+          "none": 56,
+          "zero": 0,
+          "mean": 0.5054954545454545
+        },
+        "valuation_gap": {
+          "n": 53,
+          "none": 47,
+          "zero": 11,
+          "mean": 0.3905245283018868
+        },
+        "estimate_momentum": {
+          "n": 100,
+          "none": 0,
+          "zero": 43,
+          "mean": 0.33989
+        },
+        "rating_momentum": {
+          "n": 100,
+          "none": 0,
+          "zero": 40,
+          "mean": 0.308739
+        },
+        "pead_drift": {
+          "n": 0,
+          "none": 100,
+          "zero": 0,
+          "mean": null
+        },
+        "options_sentiment": {
+          "n": 29,
+          "none": 71,
+          "zero": 4,
+          "mean": 0.253448275862069
+        },
+        "smart_money": {
+          "n": 30,
+          "none": 70,
+          "zero": 0,
+          "mean": 0.40608333333333335
+        },
+        "insider_buying": {
+          "n": 100,
+          "none": 0,
+          "zero": 93,
+          "mean": 0.054
+        },
+        "earnings_proximity": {
+          "n": 6,
+          "none": 94,
+          "zero": 0,
+          "mean": 0.9805666666666667
+        },
+        "price_vs_target": {
+          "n": 100,
+          "none": 0,
+          "zero": 47,
+          "mean": 0.178719
+        },
+        "weekly_trend_alignment": {
+          "n": 30,
+          "none": 70,
+          "zero": 0,
+          "mean": 0.77
+        },
+        "residual_momentum_12_1": {
+          "n": 100,
+          "none": 0,
+          "zero": 8,
+          "mean": 0.477962
+        },
+        "short_pressure": {
+          "n": 56,
+          "none": 44,
+          "zero": 3,
+          "mean": 0.07194642857142858
+        }
+      },
+      "watchlist": "S&P 500 Top 100",
+      "snapshot_run_id": 1370
+    },
+    {
+      "preset": "value_fisher",
+      "n": 100,
+      "gated_last": 51,
+      "avg_score": 24.7188,
+      "top_avg": 50.2625,
+      "directions": {
+        "bullish": 80,
+        "neutral": 20
+      },
+      "avg_coverage": 47.19,
+      "sleeve_top": 0.58115,
+      "sleeve_bottom": 0.3091534722222222,
+      "twelve_one": {
+        "n": 100,
+        "none": 0,
+        "zero": 8,
+        "mean": 0.477962
+      },
+      "valuation_gap": {
+        "n": 53,
+        "none": 47,
+        "zero": 11,
+        "mean": 0.3905245283018868
+      },
+      "income_factor": {
+        "n": 44,
+        "none": 56,
+        "zero": 0,
+        "mean": 0.5054954545454545
+      },
+      "top12": [
+        {
+          "rank": 1,
+          "ticker": "MU",
+          "score": 61.54,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 55.15,
+          "sleeve": 0.7757000000000001,
+          "quality": 63.7,
+          "value": 98.0,
+          "income": 93.8,
+          "flow": 15.9,
+          "mom": 25.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.9606,
+            "quality_factor": 0.6375,
+            "price_vs_target": 1.0,
+            "estimate_momentum": 0.5047
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "ANET",
+          "score": 55.17,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 54.47,
+          "sleeve": 0.628575,
+          "quality": 64.1,
+          "value": 43.6,
+          "income": null,
+          "flow": 55.4,
+          "mom": 47.1,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.3771,
+            "quality_factor": 0.6415,
+            "price_vs_target": 0.4957,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "UNH",
+          "score": 54.58,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 43.41,
+          "sleeve": 0.64595,
+          "quality": 53.9,
+          "value": 52.2,
+          "income": 49.6,
+          "flow": 3.1,
+          "mom": 27.2,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.5417,
+            "quality_factor": 0.539,
+            "price_vs_target": 0.5031,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "T",
+          "score": 51.11,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 65.78,
+          "sleeve": 0.600575,
+          "quality": 65.2,
+          "value": 64.0,
+          "income": 92.8,
+          "flow": 3.1,
+          "mom": 16.8,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.8712,
+            "quality_factor": 0.6521,
+            "price_vs_target": 0.4079,
+            "estimate_momentum": 0.4711
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "BMY",
+          "score": 49.32,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 78.83,
+          "sleeve": 0.519825,
+          "quality": 37.2,
+          "value": 41.9,
+          "income": 73.0,
+          "flow": 11.2,
+          "mom": 40.6,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.7775,
+            "quality_factor": 0.3725,
+            "price_vs_target": 0.0611,
+            "estimate_momentum": 0.8682
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "WDC",
+          "score": 48.73,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 75.31,
+          "sleeve": 0.60765,
+          "quality": 26.8,
+          "value": 60.6,
+          "income": 40.5,
+          "flow": 13.4,
+          "mom": 19.0,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.6235,
+            "quality_factor": 0.2684,
+            "price_vs_target": 0.5882,
+            "estimate_momentum": 0.9505
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "TXN",
+          "score": 48.34,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 75.15,
+          "sleeve": 0.6033,
+          "quality": 63.5,
+          "value": 38.9,
+          "income": 52.2,
+          "flow": 3.4,
+          "mom": 26.1,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.4109,
+            "quality_factor": 0.6352,
+            "price_vs_target": 0.3671,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "VZ",
+          "score": 47.97,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 72.29,
+          "sleeve": 0.547575,
+          "quality": 67.4,
+          "value": 52.8,
+          "income": 91.6,
+          "flow": 3.4,
+          "mom": 16.0,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.8739,
+            "quality_factor": 0.6738,
+            "price_vs_target": 0.1819,
+            "estimate_momentum": 0.4607
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "COF",
+          "score": 46.81,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 63.47,
+          "sleeve": 0.46825,
+          "quality": 35.2,
+          "value": 57.5,
+          "income": 38.4,
+          "flow": 15.5,
+          "mom": 34.6,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.7537,
+            "quality_factor": 0.3517,
+            "price_vs_target": 0.3957,
+            "estimate_momentum": 0.3719
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "IBM",
+          "score": 46.65,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 72.85,
+          "sleeve": 0.502725,
+          "quality": 62.0,
+          "value": 49.4,
+          "income": 72.3,
+          "flow": 4.3,
+          "mom": 19.6,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.8199,
+            "quality_factor": 0.6199,
+            "price_vs_target": 0.1672,
+            "estimate_momentum": 0.4039
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "APH",
+          "score": 46.5,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 56.55,
+          "sleeve": 0.583425,
+          "quality": 44.8,
+          "value": 44.3,
+          "income": 40.5,
+          "flow": 14.9,
+          "mom": 33.2,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.4882,
+            "quality_factor": 0.4477,
+            "price_vs_target": 0.3978,
+            "estimate_momentum": 1.0
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "MDT",
+          "score": 46.43,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 46.06,
+          "sleeve": 0.49025,
+          "quality": 64.7,
+          "value": 40.6,
+          "income": 41.5,
+          "flow": 14.9,
+          "mom": 37.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.5966,
+            "quality_factor": 0.6474,
+            "price_vs_target": 0.2163,
+            "estimate_momentum": 0.5007
+          }
+        }
+      ],
+      "signals": {
+        "relative_strength": {
+          "n": 100,
+          "none": 0,
+          "zero": 17,
+          "mean": 0.418698
+        },
+        "ma_crossover": {
+          "n": 100,
+          "none": 0,
+          "zero": 38,
+          "mean": 0.329079
+        },
+        "trend_strength": {
+          "n": 100,
+          "none": 0,
+          "zero": 50,
+          "mean": 0.288198
+        },
+        "volume_surge": {
+          "n": 100,
+          "none": 0,
+          "zero": 93,
+          "mean": 0.0034549999999999997
+        },
+        "quality_factor": {
+          "n": 56,
+          "none": 44,
+          "zero": 0,
+          "mean": 0.5391732142857143
+        },
+        "income_factor": {
+          "n": 44,
+          "none": 56,
+          "zero": 0,
+          "mean": 0.5054954545454545
+        },
+        "valuation_gap": {
+          "n": 53,
+          "none": 47,
+          "zero": 11,
+          "mean": 0.3905245283018868
+        },
+        "estimate_momentum": {
+          "n": 100,
+          "none": 0,
+          "zero": 43,
+          "mean": 0.33989
+        },
+        "rating_momentum": {
+          "n": 100,
+          "none": 0,
+          "zero": 40,
+          "mean": 0.308739
+        },
+        "pead_drift": {
+          "n": 0,
+          "none": 100,
+          "zero": 0,
+          "mean": null
+        },
+        "options_sentiment": {
+          "n": 29,
+          "none": 71,
+          "zero": 4,
+          "mean": 0.253448275862069
+        },
+        "smart_money": {
+          "n": 30,
+          "none": 70,
+          "zero": 0,
+          "mean": 0.40608333333333335
+        },
+        "insider_buying": {
+          "n": 100,
+          "none": 0,
+          "zero": 93,
+          "mean": 0.054
+        },
+        "earnings_proximity": {
+          "n": 6,
+          "none": 94,
+          "zero": 0,
+          "mean": 0.9805666666666667
+        },
+        "price_vs_target": {
+          "n": 100,
+          "none": 0,
+          "zero": 47,
+          "mean": 0.178719
+        },
+        "weekly_trend_alignment": {
+          "n": 30,
+          "none": 70,
+          "zero": 0,
+          "mean": 0.77
+        },
+        "residual_momentum_12_1": {
+          "n": 100,
+          "none": 0,
+          "zero": 8,
+          "mean": 0.477962
+        },
+        "short_pressure": {
+          "n": 56,
+          "none": 44,
+          "zero": 3,
+          "mean": 0.07194642857142858
+        }
+      },
+      "watchlist": "S&P 500 Top 100",
+      "snapshot_run_id": 1370
+    },
+    {
+      "preset": "quality_compounder",
+      "n": 50,
+      "gated_last": 6,
+      "avg_score": 39.1832,
+      "top_avg": 46.88666666666667,
+      "directions": {
+        "bullish": 48,
+        "neutral": 2
+      },
+      "avg_coverage": 74.72,
+      "sleeve_top": 0.57969375,
+      "sleeve_bottom": 0.41490208333333334,
+      "twelve_one": {
+        "n": 50,
+        "none": 0,
+        "zero": 0,
+        "mean": 0.50001
+      },
+      "valuation_gap": {
+        "n": 47,
+        "none": 3,
+        "zero": 0,
+        "mean": 0.5000191489361702
+      },
+      "income_factor": {
+        "n": 49,
+        "none": 1,
+        "zero": 0,
+        "mean": 0.5000061224489796
+      },
+      "top12": [
+        {
+          "rank": 1,
+          "ticker": "BDX",
+          "score": 54.05,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 31.0,
+          "sleeve": 0.62415,
+          "quality": 61.1,
+          "value": 54.1,
+          "income": 55.0,
+          "flow": 23.0,
+          "mom": 53.8,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.6113,
+            "estimate_momentum": 0.4931,
+            "rating_momentum": 0.48,
+            "valuation_gap": 0.9122
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "NUE",
+          "score": 50.31,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 67.44,
+          "sleeve": 0.55915,
+          "quality": 31.3,
+          "value": 24.7,
+          "income": 26.9,
+          "flow": 20.7,
+          "mom": 48.4,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.3133,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.53,
+            "valuation_gap": 0.3933
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "CVX",
+          "score": 48.71,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 45.86,
+          "sleeve": 0.6191,
+          "quality": 60.4,
+          "value": 26.8,
+          "income": 69.0,
+          "flow": 5.2,
+          "mom": 32.8,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.6039,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.3625
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "EMR",
+          "score": 48.6,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 56.9,
+          "sleeve": 0.499125,
+          "quality": 59.4,
+          "value": 25.1,
+          "income": 35.9,
+          "flow": 10.8,
+          "mom": 47.9,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.594,
+            "estimate_momentum": 0.55,
+            "rating_momentum": 0.49,
+            "valuation_gap": 0.3625
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "ADP",
+          "score": 46.83,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 76.01,
+          "sleeve": 0.5966666666666667,
+          "quality": 76.1,
+          "value": 19.6,
+          "income": 57.2,
+          "flow": 22.4,
+          "mom": 34.7,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.7614,
+            "estimate_momentum": 0.5286,
+            "rating_momentum": 0.5,
+            "valuation_gap": null
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "EXPD",
+          "score": 46.22,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 43.47,
+          "sleeve": 0.604925,
+          "quality": 54.7,
+          "value": 18.1,
+          "income": 26.9,
+          "flow": 13.2,
+          "mom": 36.4,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.5472,
+            "estimate_momentum": 1.0,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.3625
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "CINF",
+          "score": 45.25,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 47.92,
+          "sleeve": 0.5882000000000001,
+          "quality": 68.1,
+          "value": 47.5,
+          "income": 53.7,
+          "flow": 4.7,
+          "mom": 22.0,
+          "tier": "tier2_aux",
+          "signals": {
+            "quality_factor": 0.6811,
+            "estimate_momentum": 0.5037,
+            "rating_momentum": 0.52,
+            "valuation_gap": 0.648
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "BRO",
+          "score": 45.14,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 71.06,
+          "sleeve": 0.517725,
+          "quality": 66.0,
+          "value": 33.7,
+          "income": 26.9,
+          "flow": 40.9,
+          "mom": 24.9,
+          "tier": "tier2_aux",
+          "signals": {
+            "quality_factor": 0.6599,
+            "estimate_momentum": 0.522,
+            "rating_momentum": 0.49,
+            "valuation_gap": 0.399
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "ABBV",
+          "score": 44.77,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 82.1,
+          "sleeve": 0.5803,
+          "quality": 72.8,
+          "value": 42.2,
+          "income": 60.3,
+          "flow": 2.4,
+          "mom": 20.3,
+          "tier": "tier2_aux",
+          "signals": {
+            "quality_factor": 0.7284,
+            "estimate_momentum": 0.4974,
+            "rating_momentum": 0.51,
+            "valuation_gap": 0.5854
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "XOM",
+          "score": 44.58,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 58.46,
+          "sleeve": 0.6347333333333334,
+          "quality": 47.2,
+          "value": 11.0,
+          "income": 58.1,
+          "flow": 1.9,
+          "mom": 39.1,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.4722,
+            "estimate_momentum": 0.932,
+            "rating_momentum": 0.5,
+            "valuation_gap": null
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "IBM",
+          "score": 44.36,
+          "dir": "neutral",
+          "gated": false,
+          "eq": 72.85,
+          "sleeve": 0.600025,
+          "quality": 60.9,
+          "value": 51.7,
+          "income": 61.5,
+          "flow": 16.9,
+          "mom": 23.8,
+          "tier": "enhanced",
+          "signals": {
+            "quality_factor": 0.6092,
+            "estimate_momentum": 0.4039,
+            "rating_momentum": 0.52,
+            "valuation_gap": 0.867
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "LOW",
+          "score": 43.82,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 78.69,
+          "sleeve": 0.532225,
+          "quality": 56.5,
+          "value": 54.2,
+          "income": 55.0,
+          "flow": 3.8,
+          "mom": 13.8,
+          "tier": "tier2_aux",
+          "signals": {
+            "quality_factor": 0.5648,
+            "estimate_momentum": 0.4733,
+            "rating_momentum": 0.53,
+            "valuation_gap": 0.5608
+          }
+        }
+      ],
+      "signals": {
+        "relative_strength": {
+          "n": 50,
+          "none": 0,
+          "zero": 0,
+          "mean": 0.49975400000000003
+        },
+        "ma_crossover": {
+          "n": 50,
+          "none": 0,
+          "zero": 19,
+          "mean": 0.30716
+        },
+        "trend_strength": {
+          "n": 50,
+          "none": 0,
+          "zero": 34,
+          "mean": 0.179822
+        },
+        "volume_surge": {
+          "n": 50,
+          "none": 0,
+          "zero": 48,
+          "mean": 0.00243
+        },
+        "quality_factor": {
+          "n": 44,
+          "none": 6,
+          "zero": 0,
+          "mean": 0.4999954545454545
+        },
+        "income_factor": {
+          "n": 49,
+          "none": 1,
+          "zero": 0,
+          "mean": 0.5000061224489796
+        },
+        "valuation_gap": {
+          "n": 47,
+          "none": 3,
+          "zero": 0,
+          "mean": 0.5000191489361702
+        },
+        "estimate_momentum": {
+          "n": 50,
+          "none": 0,
+          "zero": 2,
+          "mean": 0.507196
+        },
+        "rating_momentum": {
+          "n": 50,
+          "none": 0,
+          "zero": 0,
+          "mean": 0.507312
+        },
+        "pead_drift": {
+          "n": 0,
+          "none": 50,
+          "zero": 0,
+          "mean": null
+        },
+        "options_sentiment": {
+          "n": 14,
+          "none": 36,
+          "zero": 4,
+          "mean": 0.225
+        },
+        "smart_money": {
+          "n": 9,
+          "none": 41,
+          "zero": 0,
+          "mean": 0.3711111111111111
+        },
+        "insider_buying": {
+          "n": 50,
+          "none": 0,
+          "zero": 46,
+          "mean": 0.056
+        },
+        "earnings_proximity": {
+          "n": 4,
+          "none": 46,
+          "zero": 0,
+          "mean": 0.925
+        },
+        "price_vs_target": {
+          "n": 50,
+          "none": 0,
+          "zero": 10,
+          "mean": 0.211584
+        },
+        "weekly_trend_alignment": {
+          "n": 15,
+          "none": 35,
+          "zero": 0,
+          "mean": 0.6986666666666667
+        },
+        "residual_momentum_12_1": {
+          "n": 50,
+          "none": 0,
+          "zero": 0,
+          "mean": 0.50001
+        },
+        "short_pressure": {
+          "n": 44,
+          "none": 6,
+          "zero": 1,
+          "mean": 0.1228409090909091
+        }
+      },
+      "watchlist": "Dividend Aristocrats Top 50",
+      "snapshot_run_id": 1364
+    },
+    {
+      "preset": "long_horizon_12to36m",
+      "n": 100,
+      "gated_last": 41,
+      "avg_score": 28.2251,
+      "top_avg": 52.969166666666666,
+      "directions": {
+        "bullish": 92,
+        "neutral": 8
+      },
+      "avg_coverage": 54.0,
+      "sleeve_top": 0.5830076388888888,
+      "sleeve_bottom": 0.3879638888888889,
+      "twelve_one": {
+        "n": 100,
+        "none": 0,
+        "zero": 8,
+        "mean": 0.477962
+      },
+      "valuation_gap": {
+        "n": 53,
+        "none": 47,
+        "zero": 11,
+        "mean": 0.3905245283018868
+      },
+      "income_factor": {
+        "n": 44,
+        "none": 56,
+        "zero": 0,
+        "mean": 0.5054954545454545
+      },
+      "top12": [
+        {
+          "rank": 1,
+          "ticker": "ANET",
+          "score": 63.46,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 54.47,
+          "sleeve": 0.6346499999999999,
+          "quality": 64.1,
+          "value": 43.6,
+          "income": null,
+          "flow": 55.4,
+          "mom": 47.1,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.3771,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.6415,
+            "rating_momentum": 0.52
+          }
+        },
+        {
+          "rank": 2,
+          "ticker": "MU",
+          "score": 56.05,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 55.15,
+          "sleeve": 0.6507000000000001,
+          "quality": 63.7,
+          "value": 98.0,
+          "income": 93.8,
+          "flow": 15.9,
+          "mom": 25.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.9606,
+            "estimate_momentum": 0.5047,
+            "quality_factor": 0.6375,
+            "rating_momentum": 0.5
+          }
+        },
+        {
+          "rank": 3,
+          "ticker": "NEM",
+          "score": 54.22,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 22.44,
+          "sleeve": 0.495075,
+          "quality": 90.8,
+          "value": 26.5,
+          "income": 30.0,
+          "flow": 15.6,
+          "mom": 62.5,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.2985,
+            "estimate_momentum": 0.2143,
+            "quality_factor": 0.9075,
+            "rating_momentum": 0.56
+          }
+        },
+        {
+          "rank": 4,
+          "ticker": "BMY",
+          "score": 53.56,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 78.83,
+          "sleeve": 0.63955,
+          "quality": 37.2,
+          "value": 41.9,
+          "income": 73.0,
+          "flow": 11.2,
+          "mom": 40.6,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.7775,
+            "estimate_momentum": 0.8682,
+            "quality_factor": 0.3725,
+            "rating_momentum": 0.54
+          }
+        },
+        {
+          "rank": 5,
+          "ticker": "UNH",
+          "score": 53.55,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 43.41,
+          "sleeve": 0.6551750000000001,
+          "quality": 53.9,
+          "value": 52.2,
+          "income": 49.6,
+          "flow": 3.1,
+          "mom": 27.2,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.5417,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.539,
+            "rating_momentum": 0.54
+          }
+        },
+        {
+          "rank": 6,
+          "ticker": "TXN",
+          "score": 53.45,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 75.15,
+          "sleeve": 0.649025,
+          "quality": 63.5,
+          "value": 38.9,
+          "income": 52.2,
+          "flow": 3.4,
+          "mom": 26.1,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.4109,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.6352,
+            "rating_momentum": 0.55
+          }
+        },
+        {
+          "rank": 7,
+          "ticker": "BKNG",
+          "score": 50.7,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 77.07,
+          "sleeve": 0.6103666666666667,
+          "quality": 88.3,
+          "value": 40.4,
+          "income": 30.0,
+          "flow": 21.8,
+          "mom": 43.4,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": null,
+            "estimate_momentum": 0.4378,
+            "quality_factor": 0.8833,
+            "rating_momentum": 0.51
+          }
+        },
+        {
+          "rank": 8,
+          "ticker": "BLK",
+          "score": 50.48,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 59.36,
+          "sleeve": 0.525575,
+          "quality": 59.1,
+          "value": 36.7,
+          "income": 56.8,
+          "flow": 9.9,
+          "mom": 41.6,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.3696,
+            "estimate_momentum": 0.6218,
+            "quality_factor": 0.5909,
+            "rating_momentum": 0.52
+          }
+        },
+        {
+          "rank": 9,
+          "ticker": "AVGO",
+          "score": 50.31,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 77.38,
+          "sleeve": 0.5433250000000001,
+          "quality": 68.6,
+          "value": 68.5,
+          "income": 40.5,
+          "flow": 2.2,
+          "mom": 20.5,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.5072,
+            "estimate_momentum": 0.5,
+            "quality_factor": 0.6861,
+            "rating_momentum": 0.48
+          }
+        },
+        {
+          "rank": 10,
+          "ticker": "AMZN",
+          "score": 50.17,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 79.77,
+          "sleeve": 0.42269999999999996,
+          "quality": 58.4,
+          "value": 31.4,
+          "income": null,
+          "flow": 32.8,
+          "mom": 38.0,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.0,
+            "estimate_momentum": 0.6067,
+            "quality_factor": 0.5841,
+            "rating_momentum": 0.5
+          }
+        },
+        {
+          "rank": 11,
+          "ticker": "APH",
+          "score": 49.95,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 56.55,
+          "sleeve": 0.616475,
+          "quality": 44.8,
+          "value": 44.3,
+          "income": 40.5,
+          "flow": 14.9,
+          "mom": 33.2,
+          "tier": "enhanced",
+          "signals": {
+            "valuation_gap": 0.4882,
+            "estimate_momentum": 1.0,
+            "quality_factor": 0.4477,
+            "rating_momentum": 0.53
+          }
+        },
+        {
+          "rank": 12,
+          "ticker": "KLAC",
+          "score": 49.73,
+          "dir": "bullish",
+          "gated": false,
+          "eq": 81.06,
+          "sleeve": 0.5534749999999999,
+          "quality": 63.8,
+          "value": 34.7,
+          "income": 40.5,
+          "flow": 3.9,
+          "mom": 27.1,
+          "tier": "tier2_aux",
+          "signals": {
+            "valuation_gap": 0.3771,
+            "estimate_momentum": 0.6992,
+            "quality_factor": 0.6376,
+            "rating_momentum": 0.5
+          }
+        }
+      ],
+      "signals": {
+        "relative_strength": {
+          "n": 100,
+          "none": 0,
+          "zero": 17,
+          "mean": 0.418698
+        },
+        "ma_crossover": {
+          "n": 100,
+          "none": 0,
+          "zero": 38,
+          "mean": 0.329079
+        },
+        "trend_strength": {
+          "n": 100,
+          "none": 0,
+          "zero": 50,
+          "mean": 0.288198
+        },
+        "volume_surge": {
+          "n": 100,
+          "none": 0,
+          "zero": 93,
+          "mean": 0.0034549999999999997
+        },
+        "quality_factor": {
+          "n": 56,
+          "none": 44,
+          "zero": 0,
+          "mean": 0.5391732142857143
+        },
+        "income_factor": {
+          "n": 44,
+          "none": 56,
+          "zero": 0,
+          "mean": 0.5054954545454545
+        },
+        "valuation_gap": {
+          "n": 53,
+          "none": 47,
+          "zero": 11,
+          "mean": 0.3905245283018868
+        },
+        "estimate_momentum": {
+          "n": 100,
+          "none": 0,
+          "zero": 43,
+          "mean": 0.33989
+        },
+        "rating_momentum": {
+          "n": 100,
+          "none": 0,
+          "zero": 40,
+          "mean": 0.308739
+        },
+        "pead_drift": {
+          "n": 0,
+          "none": 100,
+          "zero": 0,
+          "mean": null
+        },
+        "options_sentiment": {
+          "n": 29,
+          "none": 71,
+          "zero": 4,
+          "mean": 0.253448275862069
+        },
+        "smart_money": {
+          "n": 30,
+          "none": 70,
+          "zero": 0,
+          "mean": 0.40608333333333335
+        },
+        "insider_buying": {
+          "n": 100,
+          "none": 0,
+          "zero": 93,
+          "mean": 0.054
+        },
+        "earnings_proximity": {
+          "n": 6,
+          "none": 94,
+          "zero": 0,
+          "mean": 0.9805666666666667
+        },
+        "price_vs_target": {
+          "n": 100,
+          "none": 0,
+          "zero": 47,
+          "mean": 0.178719
+        },
+        "weekly_trend_alignment": {
+          "n": 30,
+          "none": 70,
+          "zero": 0,
+          "mean": 0.77
+        },
+        "residual_momentum_12_1": {
+          "n": 100,
+          "none": 0,
+          "zero": 8,
+          "mean": 0.477962
+        },
+        "short_pressure": {
+          "n": 56,
+          "none": 44,
+          "zero": 3,
+          "mean": 0.07194642857142858
+        }
+      },
+      "watchlist": "S&P 500 Top 100",
+      "snapshot_run_id": 1370
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "company_of_interest": "JOBY",
+  "trade_date": "2026-01-09",
+  "market_report": "Analysis Report for JOBY: current price $15.59 with ATR: 0.93. RSI is near 54 and MACD recently turned positive.\nSIGNAL_JSON: {\"section\":\"Market\",\"stance\":\"neutral\",\"confidence\":0.5,\"key_factors\":[\"RSI neutral\",\"MACD positive\"]}",
+  "fundamentals_report": "Current stock price: $15.59. Price to Sales Ratio: 41833.32. High valuation with limited revenue.\nSIGNAL_JSON: {\"section\":\"Fundamentals\",\"stance\":\"bearish\",\"confidence\":0.7,\"key_factors\":[\"High valuation\",\"Limited revenue\"]}",
+  "news_report": "No significant company-specific news in the past week.\nSIGNAL_JSON: {\"section\":\"News\",\"stance\":\"neutral\",\"confidence\":0.4,\"key_factors\":[\"No new catalysts\"]}",
+  "sentiment_report": "Sentiment is neutral with cautious optimism around certification progress.\nSIGNAL_JSON: {\"section\":\"Sentiment\",\"stance\":\"neutral\",\"confidence\":0.45,\"key_factors\":[\"Cautious optimism\"]}",
+  "investment_plan": "Bull Analyst: (1) Certification milestones create upside catalysts. BUY case highlights early mover advantages. Bear Analyst: (1) Regulatory timelines are unpredictable and risk is asymmetric. SELL case emphasizes downside risk.\nSIGNAL_JSON: {\"section\":\"Research\",\"stance\":\"bearish\",\"confidence\":0.6,\"key_factors\":[\"Regulatory risk\",\"Execution uncertainty\"]}",
+  "trader_investment_plan": "Entry: $15.59. Stop Loss: $14.34. Target 1: $17.93. SELL if certification delays emerge.\nSIGNAL_JSON: {\"section\":\"Trading Plan\",\"stance\":\"bearish\",\"confidence\":0.65,\"key_factors\":[\"Risk control\",\"Catalyst uncertainty\"]}",
+  "final_trade_decision": "Recommendation: SELL (or materially reduce to a token speculative position).",
+  "investment_debate_state": {
+    "bull_history": "Bull Analyst: First-mover advantage in eVTOL could unlock significant market share.",
+    "bear_history": "Bear Analyst: Certification delays and cash burn create outsized downside risk.",
+    "history": "Bull Analyst: Catalysts ahead. Bear Analyst: Execution risk remains.",
+    "current_response": "",
+    "judge_decision": "SELL"
+  },
+  "risk_debate_state": {
+    "risky_history": "Risky Analyst: Momentum is improving, but position sizing should reflect binary regulatory risk. A small speculative stake can capture upside.",
+    "neutral_history": "Neutral Analyst: Reduce exposure and tighten risk controls until certification clarity emerges.",
+    "safe_history": "Safe Analyst: If certification slips, downside could be steep and swift. Preserve capital and wait.",
+    "history": "Risky Analyst: Small stake. Safe Analyst: Avoid. Neutral Analyst: Reduce."
+  }
+}

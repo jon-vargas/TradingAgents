@@ -1,0 +1,36 @@
+---
+description: Command-driven QA loop — slash commands must load project-local qa-* skills only
+alwaysApply: true
+---
+
+# QA workflow (TradingAgents)
+
+When the user invokes `/qa-start`, `/qa-review`, `/qa-reconcile`, `/qa-gate`, `/qa-loop`, `/qa-verify`, `/qa-status`, or `/feature-audit`:
+
+1. **Do not improvise** a different QA process. Use the matching skill in **`.cursor/skills/` in this repository only**.
+2. **Do not load** `~/.cursor/skills/` — project-local skills prevent cross-repo confusion (e.g. CommonHour vs TradingAgents paths).
+3. **Parse inputs** from `@` paths in the user message:
+   - For `/qa-*` plan loop: first `@` file → `plan_path` (unless clearly a feedback/session file); second `@` → `feedback_path` if clearly feedback
+   - For `/feature-audit`: first `@`/name → feature `focus`; optional `depth=` / `mode=`; FEEDBACK `@` only if clearly a feedback/session path
+4. **Session feedback (no shared write target):** Resolve `feedback_path` per **`.cursor/skills/qa-feedback-sessions.md`** (create `docs/qa/feedback/<slug>-YYYY-MM-DD.md`, update `ACTIVE.md`). Do **not** append new loop findings to `docs/qa/FEEDBACK.md`.
+5. **`/qa-loop`** runs review → reconcile → gate **in one turn** by executing each skill sequentially. Do not tell the user to run nested slash commands. Use **one** resolved `feedback_path` for all three stages.
+6. **Append-only** within the session feedback file: never delete prior sections in that file.
+7. **Blockers**: unresolved bare `open` CRITICAL/SIGNIFICANT findings (scan `docs/qa/feedback/*.md` + legacy `FEEDBACK.md`) block implementation. `open (pending implementation)` is not a gate blocker.
+8. **`/feature-audit`** audits a **shipped feature** (map → baseline → probe → findings). It is not a substitute for `/qa-loop` on plans. Default mode is `audit` (no code edits). Use a session feedback file when recording findings.
+
+Skill map (all under `.cursor/skills/`):
+
+| Command | Skill folder |
+|---------|----------------|
+| `/qa-review` | `qa-review` |
+| `/qa-reconcile` | `qa-reconcile` |
+| `/qa-gate` | `qa-gate` |
+| `/qa-verify` | `qa-verify-implementation` |
+| `/qa-start` | `qa-start` |
+| `/qa-loop` | `qa-loop` (orchestrator → review + reconcile + gate) |
+| `/qa-status` | `qa-status` |
+| `/feature-audit` | `feature-audit` |
+
+Shared procedure: `qa-feedback-sessions.md` (session path resolution for all `/qa-*` writes).
+
+Related: `/onboard`, `/handoff`, `/docs-capture` → see `tradingagents-core.mdc` and `docs/agent-onboarding.md`.

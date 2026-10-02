@@ -1,26 +1,57 @@
-typing-extensions
+# LLM / LangChain
 langchain-openai
+perplexityai>=0.43.0
+openai>=1.0.0
 langchain-experimental
-pandas
-yfinance
-praw
-feedparser
-stockstats
-eodhd
+langchain-anthropic
+langchain-google-genai
 langgraph
-chromadb
-setuptools
-backtrader
+langgraph-checkpoint>=2.1.0,<4.0.0
+langgraph-checkpoint-sqlite>=2.0.6,<3.0.0
+typing-extensions
+
+# Data
+pandas
+numpy
+yfinance
+stockstats
+finnhub-python
+eodhd
 akshare
 tushare
-finnhub-python
-parsel
+
+# News / social
+praw
+feedparser
 requests
-tqdm
-pytz
-redis
-chainlit
+parsel
+
+# Web UI
+fastapi
+uvicorn
+jinja2
+python-multipart
+aiofiles
+
+# PDF / reports
+weasyprint
+tiktoken
+
+# CLI
+typer
 rich
 questionary
-langchain_anthropic
-langchain-google-genai
+
+# Utilities
+python-dotenv
+python-dateutil
+pytz
+tqdm
+setuptools
+
+# Storage
+chromadb
+
+# Legacy (used by some dataflows)
+backtrader
+redis
