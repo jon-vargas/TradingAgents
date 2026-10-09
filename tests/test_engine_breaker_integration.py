@@ -21,10 +21,18 @@ class _OpenLimiter:
 
 
 class TestEngineBreakerIntegration(unittest.TestCase):
+    _FAST_BREAKER_CFG = {
+        "screening": {
+            # Avoid real sleeps when the limiter reports an open breaker.
+            "breaker_wait_max_seconds": 0,
+            "breaker_wait_max_per_trip": 0,
+        }
+    }
+
     def test_ohlcv_download_returns_none_when_breaker_open(self):
         from tradingagents.screening.engine import ScreeningEngine
 
-        engine = ScreeningEngine(config={"screening": {}}, db=None)
+        engine = ScreeningEngine(config=self._FAST_BREAKER_CFG, db=None)
         start = datetime.now() - timedelta(days=10)
         end = datetime.now()
 
@@ -40,7 +48,7 @@ class TestEngineBreakerIntegration(unittest.TestCase):
     def test_spy_download_returns_none_when_breaker_open(self):
         from tradingagents.screening.engine import ScreeningEngine
 
-        engine = ScreeningEngine(config={"screening": {}}, db=None)
+        engine = ScreeningEngine(config=self._FAST_BREAKER_CFG, db=None)
         start = datetime.now() - timedelta(days=10)
         end = datetime.now()
 

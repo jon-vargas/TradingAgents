@@ -6,6 +6,10 @@ Minimal release log for major project milestones.
 
 ## Unreleased
 
+### Scan selected watchlists
+
+- Screener **Scan selected** unions two or more checked lists into one deduped scan and shows it on the Cross-Watchlist board. It does not add S&P or Russell index buckets. That batch replaces the visible Cross-Watchlist results for the lens until the next Scan All or Scan selected. **Run Scan** stays one list. With **All modes**, Scan selected scores the chosen lists once and opens the All modes tab. Full **Scan All** stays one lens and still rejects All modes.
+
 ### All modes (one-pass meta screening)
 
 - New watchlist scan strategy `multi_sleeve`: one `ScreeningEngine.scan()` scores Opportunity, Reversal, Early momentum, and Base. The lead is the first desk that clears (reversal, momentum, base, then opportunity). Results group by that desk. Location and secondary-desk chips sit on the row (`tradingagents/screening/multi_sleeve.py`).

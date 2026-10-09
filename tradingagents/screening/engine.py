@@ -263,6 +263,105 @@ _DEFAULT_FUNNEL_CUTOFF_PCT = 0.60  # Top 60% of Tier 1 scores proceed to Tier 2
 # still allowing other (non-download) engine work to proceed concurrently.
 _DOWNLOAD_LOCK = threading.Lock()
 
+# Hard bounds around every yfinance bulk download.  yfinance's own ``timeout``
+# is a per-socket-read timeout, not a wall-clock cap, so a trickling or wedged
+# connection can block forever.  Python cannot kill a thread, so the download
+# runs in a daemon thread that is *abandoned* on timeout.
+_DOWNLOAD_HARD_TIMEOUT_SECONDS = 120.0
+_DOWNLOAD_LOCK_WAIT_SECONDS = 150.0
+# After abandoning a wedged download, refuse new downloads for this long so we
+# never run two yfinance requests concurrently (the reason _DOWNLOAD_LOCK
+# exists).  After the quarantine we assume the old thread is dead weight.
+_ABANDONED_QUARANTINE_SECONDS = 600.0
+_ABANDONED_DOWNLOADS: List[Tuple[threading.Thread, float]] = []
+_ABANDONED_LOCK = threading.Lock()
+
+# Skip reasons that mean "this ticker was not scored because the scan was cut
+# short" (as opposed to bad ticker / thin history).  Drives the partial flag.
+PARTIAL_SKIP_REASONS = frozenset(
+    {"deadline_exceeded", "deferred_breaker_open", "download_timeout", "cancelled"}
+)
+
+
+class DownloadTimeout(TimeoutError):
+    """A yfinance download exceeded its hard wall-clock bound (or was refused)."""
+
+
+def _live_abandoned_downloads(now: Optional[float] = None) -> List[Tuple[threading.Thread, float]]:
+    now = time.monotonic() if now is None else now
+    with _ABANDONED_LOCK:
+        _ABANDONED_DOWNLOADS[:] = [(t, at) for (t, at) in _ABANDONED_DOWNLOADS if t.is_alive()]
+        return list(_ABANDONED_DOWNLOADS)
+
+
+def _guarded_download(
+    label: str,
+    fn,
+    *,
+    hard_timeout: Optional[float] = None,
+    lock_wait: Optional[float] = None,
+):
+    """Run ``fn()`` (a yfinance call) serialized and wall-clock bounded.
+
+    * Waits at most ``lock_wait`` for ``_DOWNLOAD_LOCK`` (never blocks forever).
+    * Runs ``fn`` in a daemon thread and gives up after ``hard_timeout``; the
+      lock is released and the thread abandoned (logged with its stack).
+    * Refuses to start a new download while a recently abandoned one is still
+      alive (quarantine) so two yfinance requests never overlap.
+
+    Raises ``DownloadTimeout`` for all three failure modes.
+    """
+    from tradingagents.dataflows.thread_diagnostics import thread_stack
+
+    hard_timeout = _DOWNLOAD_HARD_TIMEOUT_SECONDS if hard_timeout is None else float(hard_timeout)
+    lock_wait = _DOWNLOAD_LOCK_WAIT_SECONDS if lock_wait is None else float(lock_wait)
+
+    now = time.monotonic()
+    for _t, abandoned_at in _live_abandoned_downloads(now):
+        if now - abandoned_at < _ABANDONED_QUARANTINE_SECONDS:
+            raise DownloadTimeout(
+                f"{label}: refused - an abandoned yfinance download is still running "
+                f"({now - abandoned_at:.0f}s ago)"
+            )
+
+    t_wait = time.monotonic()
+    if not _DOWNLOAD_LOCK.acquire(timeout=lock_wait):
+        raise DownloadTimeout(f"{label}: could not acquire download lock within {lock_wait:.0f}s")
+    lock_waited = time.monotonic() - t_wait
+    try:
+        box: Dict[str, Any] = {}
+
+        def _target() -> None:
+            try:
+                box["value"] = fn()
+            except BaseException as exc:  # noqa: BLE001 - re-raised in caller
+                box["error"] = exc
+
+        th = threading.Thread(target=_target, daemon=True, name=f"yf-download-{label}")
+        t_dl = time.monotonic()
+        th.start()
+        th.join(hard_timeout)
+        elapsed = time.monotonic() - t_dl
+        if th.is_alive():
+            with _ABANDONED_LOCK:
+                _ABANDONED_DOWNLOADS.append((th, time.monotonic()))
+            logger.error(
+                "yfinance download %s exceeded hard timeout %.0fs; abandoning thread. Stack:\n%s",
+                label, hard_timeout, thread_stack(th),
+            )
+            raise DownloadTimeout(f"{label}: no response within {hard_timeout:.0f}s")
+        if lock_waited > 5 or elapsed > 20:
+            logger.warning(
+                "yfinance download %s slow: lock_wait=%.1fs download=%.1fs", label, lock_waited, elapsed
+            )
+        else:
+            logger.debug("yfinance download %s ok: lock_wait=%.1fs download=%.1fs", label, lock_waited, elapsed)
+        if "error" in box:
+            raise box["error"]
+        return box.get("value")
+    finally:
+        _DOWNLOAD_LOCK.release()
+
 
 @dataclass
 class ScreeningResult:
@@ -349,6 +448,7 @@ class ScreeningEngine:
         self._screening_config = self.config.get("screening", {})
         self._lock = threading.Lock()
         self._skipped: List[Dict[str, str]] = []  # tracks {ticker, reason}
+        self._timed_out_tickers: set = set()  # tickers whose download hit the hard timeout
         self._breaker_wait_used = 0.0
         self.last_run_id: Optional[int] = None
 
@@ -392,6 +492,7 @@ class ScreeningEngine:
 
         with self._lock:
             self._skipped = []
+            self._timed_out_tickers = set()
         self._breaker_wait_used = 0.0
         t_start = time.monotonic()
 
@@ -433,6 +534,16 @@ class ScreeningEngine:
         # results we have so the scheduler can move on.
         budget = float(time_budget_seconds) if time_budget_seconds else 0.0
         deadline = t_start + budget if budget > 0 else None
+
+        _cancel_cb = (criteria_meta or {}).get("_cancel_check")
+
+        def _cancel_requested() -> bool:
+            if not callable(_cancel_cb):
+                return False
+            try:
+                return bool(_cancel_cb())
+            except Exception:
+                return False
 
         def _deadline_exceeded(stage: str) -> bool:
             if deadline is None:
@@ -677,8 +788,14 @@ class ScreeningEngine:
                     for t in chunk:
                         self._skipped.append({"ticker": t, "reason": "deadline_exceeded"})
                     continue
+                if _cancel_requested():
+                    logger.warning("scan: cancel requested; skipping OHLCV chunk %d/%d", ci + 1, len(chunks))
+                    for t in chunk:
+                        self._skipped.append({"ticker": t, "reason": "cancelled"})
+                    continue
                 if len(chunks) > 1:
                     logger.info("Fetching chunk %d/%d (%d tickers)", ci + 1, len(chunks), len(chunk))
+                t_chunk = time.monotonic()
                 _emit_progress("ohlcv", ci + 1, len(chunks))
                 if limiter.is_open() and self._wait_for_yfinance_breaker(limiter, f"ohlcv_chunk_{ci+1}/{len(chunks)}"):
                     logger.warning(
@@ -691,6 +808,11 @@ class ScreeningEngine:
                     continue
                 chunk_data = self._fetch_batch_ohlcv(chunk, date)
                 batch_data.update(chunk_data)
+                logger.info(
+                    "OHLCV chunk %d/%d done in %.1fs (%d/%d tickers with data, elapsed %.0fs)",
+                    ci + 1, len(chunks), time.monotonic() - t_chunk,
+                    len(chunk_data), len(chunk), time.monotonic() - t_start,
+                )
                 if chunk_sleep > 0 and ci < len(chunks) - 1:
                     time.sleep(chunk_sleep)
 
@@ -711,10 +833,15 @@ class ScreeningEngine:
         # PHASE 1: Tier 1 signals (OHLCV-only, no extra API calls)
         # =====================================================================
         tier1_scores: Dict[str, Dict] = {}  # ticker → {signals, score}
+        _partial_skipped = {
+            s.get("ticker") for s in self._skipped if s.get("reason") in PARTIAL_SKIP_REASONS
+        }
         for ticker in tickers:
             data = batch_data.get(ticker)
             if data is None:
-                self._skipped.append({"ticker": ticker, "reason": "no_data"})
+                if ticker not in _partial_skipped:
+                    reason = "download_timeout" if ticker in self._timed_out_tickers else "no_data"
+                    self._skipped.append({"ticker": ticker, "reason": reason})
                 continue
             try:
                 signals = self._compute_tier1_signals(ticker, data, regime)
@@ -979,7 +1106,7 @@ class ScreeningEngine:
                 from tradingagents.screening.weekly_alignment import score_weekly_alignment
 
                 weekly_tickers = enhanced_tickers
-                if (criteria_meta or {}).get("source_mode") == "union_buckets":
+                if (criteria_meta or {}).get("source_mode") in {"union_buckets", "selected_watchlists"}:
                     weekly_mtf_cfg = (
                         self._screening_config.get("scan_all", {}).get("weekly_mtf", {})
                     )
@@ -1510,7 +1637,7 @@ class ScreeningEngine:
         if (
             enhanced_data
             and self.db
-            and (criteria_meta or {}).get("source_mode") != "union_buckets"
+            and (criteria_meta or {}).get("source_mode") not in {"union_buckets", "selected_watchlists"}
         ):
             try:
                 from tradingagents.dataflows.yfinance_extended import get_corporate_actions
@@ -1798,6 +1925,30 @@ class ScreeningEngine:
     # Retry Helpers
     # =========================================================================
 
+    def _download_limits(self) -> Dict[str, float]:
+        cfg = self._screening_config or {}
+        return {
+            "hard_timeout": float(cfg.get("download_hard_timeout_seconds", _DOWNLOAD_HARD_TIMEOUT_SECONDS)),
+            "lock_wait": float(cfg.get("download_lock_wait_seconds", _DOWNLOAD_LOCK_WAIT_SECONDS)),
+        }
+
+    def get_scan_health(self) -> Dict[str, Any]:
+        """Summarize the last scan's skips; ``partial`` = scan was cut short."""
+        with self._lock:
+            skipped = list(self._skipped)
+        reasons: Dict[str, int] = {}
+        for s in skipped:
+            reason = str(s.get("reason") or "unknown")
+            reasons[reason] = reasons.get(reason, 0) + 1
+        partial_reasons = {k: v for k, v in reasons.items() if k in PARTIAL_SKIP_REASONS}
+        return {
+            "partial": bool(partial_reasons),
+            "partial_ticker_count": sum(partial_reasons.values()),
+            "partial_reasons": partial_reasons,
+            "skipped_count": len(skipped),
+            "skipped_reasons": reasons,
+        }
+
     def _download_ohlcv_with_retry(self, tickers, start_date, end_date, is_single):
         """Download OHLCV data with exponential backoff retry.
 
@@ -1816,26 +1967,35 @@ class ScreeningEngine:
             if not limiter.acquire(block=True):
                 return None
             try:
-                with _DOWNLOAD_LOCK:
+                def _do_download():
                     if is_single:
-                        ohlcv = yf.download(
+                        return yf.download(
                             tickers_str, start=start_date.strftime("%Y-%m-%d"),
                             end=end_date.strftime("%Y-%m-%d"), progress=False,
                             auto_adjust=True, multi_level_index=False,
                             timeout=30,
                         )
-                    else:
-                        ohlcv = yf.download(
-                            tickers_str, start=start_date.strftime("%Y-%m-%d"),
-                            end=end_date.strftime("%Y-%m-%d"), group_by="ticker",
-                            progress=False, auto_adjust=True,
-                            timeout=30,
-                        )
+                    return yf.download(
+                        tickers_str, start=start_date.strftime("%Y-%m-%d"),
+                        end=end_date.strftime("%Y-%m-%d"), group_by="ticker",
+                        progress=False, auto_adjust=True,
+                        timeout=30,
+                    )
+
+                ohlcv = _guarded_download(
+                    f"ohlcv[{len(tickers)}]", _do_download, **self._download_limits()
+                )
                 if ohlcv is not None and not ohlcv.empty:
                     limiter.record_success()
                     return ohlcv
                 logger.warning("OHLCV download returned empty (attempt %d)", attempt + 1)
                 limiter.record_success()
+            except DownloadTimeout as e:
+                # Do not retry: each retry would strand another thread.
+                logger.error("OHLCV download timed out for %d tickers: %s", len(tickers), e)
+                with self._lock:
+                    self._timed_out_tickers.update(str(t) for t in tickers)
+                return None
             except Exception as e:
                 if limiter.record_if_rate_limited(e):
                     return None
@@ -1922,8 +2082,9 @@ class ScreeningEngine:
             if not limiter.acquire(block=True):
                 return out
             try:
-                with _DOWNLOAD_LOCK:
-                    raw = yf.download(
+                raw = _guarded_download(
+                    "momentum_bench",
+                    lambda: yf.download(
                         symbols if len(symbols) > 1 else symbols[0],
                         start=start_date.strftime("%Y-%m-%d"),
                         end=end_date.strftime("%Y-%m-%d"),
@@ -1931,7 +2092,9 @@ class ScreeningEngine:
                         auto_adjust=True,
                         group_by="ticker" if len(symbols) > 1 else None,
                         timeout=30,
-                    )
+                    ),
+                    **self._download_limits(),
+                )
                 if raw is None or getattr(raw, "empty", True):
                     limiter.record_success()
                     return out
@@ -1959,6 +2122,9 @@ class ScreeningEngine:
                     except Exception:
                         continue
                 return out
+            except DownloadTimeout as e:
+                logger.error("Momentum benchmark download timed out: %s", e)
+                return out
             except Exception as e:
                 if limiter.record_if_rate_limited(e):
                     return out
@@ -1984,13 +2150,16 @@ class ScreeningEngine:
             if not limiter.acquire(block=True):
                 return None
             try:
-                with _DOWNLOAD_LOCK:
-                    spy_data = yf.download(
+                spy_data = _guarded_download(
+                    "spy",
+                    lambda: yf.download(
                         "SPY", start=start_date.strftime("%Y-%m-%d"),
                         end=end_date.strftime("%Y-%m-%d"), progress=False,
                         auto_adjust=True, multi_level_index=False,
                         timeout=30,
-                    )
+                    ),
+                    **self._download_limits(),
+                )
                 if not spy_data.empty:
                     limiter.record_success()
                     spy_close = spy_data["Close"].dropna()
@@ -1998,6 +2167,9 @@ class ScreeningEngine:
                         spy_close = spy_close.squeeze()
                     return spy_close
                 limiter.record_success()
+            except DownloadTimeout as e:
+                logger.error("SPY benchmark download timed out: %s", e)
+                return None
             except Exception as e:
                 if limiter.record_if_rate_limited(e):
                     return None

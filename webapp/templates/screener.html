@@ -20,12 +20,16 @@
     <h3>Run Screening</h3>
   </div>
   <div class="card-body">
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto auto; gap: var(--spacing-4); align-items: end;">
-      <div>
-        <label class="form-label">Watchlist</label>
-        <select id="watchlist-select" class="form-select">
-          <option value="">Loading watchlists...</option>
-        </select>
+    <div style="display: grid; grid-template-columns: minmax(9.5rem, 1.25fr) minmax(0, 1fr) auto minmax(0, 1fr) auto auto auto; gap: var(--spacing-4); align-items: end;">
+      <div id="watchlist-picker" style="position: relative; min-width: 0;">
+        <label class="form-label" for="watchlist-picker-btn">Watchlists</label>
+        <button type="button" id="watchlist-picker-btn" class="form-select" onclick="toggleWatchlistPicker()" aria-haspopup="listbox" aria-expanded="false" style="display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; cursor:pointer; font-family:inherit;">
+          <span id="watchlist-picker-label" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Choose…</span>
+          <span aria-hidden="true" style="flex:none; opacity:0.7;">▾</span>
+        </button>
+        <div id="watchlist-checks" hidden style="position:absolute; z-index:40; top:calc(100% + 4px); left:0; right:0; max-height:240px; overflow:auto; border:1px solid var(--border); border-radius:6px; padding:6px 8px; background:var(--bg-primary); box-shadow:0 8px 24px rgba(0,0,0,0.18);">
+          <span class="text-muted" style="font-size: 12px;">Loading watchlists...</span>
+        </div>
       </div>
       <div>
         <small id="preset-select-hint" class="text-muted" style="display:block;margin-bottom:6px;font-size:11px;line-height:1.35;"></small>
@@ -50,8 +54,13 @@
         </select>
       </div>
       <div>
-        <button id="run-screen-btn" class="btn btn-primary" onclick="runScreening()">
+        <button id="run-screen-btn" class="btn btn-primary" onclick="runScreening()" disabled>
           Run Scan
+        </button>
+      </div>
+      <div>
+        <button id="run-selected-btn" class="btn btn-secondary" onclick="runSelectedWatchlists()" disabled title="Check two or more watchlists. Scan selected runs them as one union and does not add index buckets." style="white-space:nowrap;">
+          Scan selected
         </button>
       </div>
       <div>
@@ -486,6 +495,7 @@
         <button type="button" id="scan-all-tab-reversal" class="btn btn-sm" onclick="setScanAllLens('reversal')" title="Reversal buildup Scan All batch">Reversal</button>
         <button type="button" id="scan-all-tab-momentum" class="btn btn-sm" onclick="setScanAllLens('momentum')" title="Early momentum Scan All batch">Momentum</button>
         <button type="button" id="scan-all-tab-base" class="btn btn-sm" onclick="setScanAllLens('base')" title="Base coil Scan All batch — names still inside the range">Base</button>
+        <button type="button" id="scan-all-tab-multi" class="btn btn-sm" onclick="setScanAllLens('multi')" title="All modes on two or more selected watchlists">All modes</button>
       </div>
       <span id="scan-all-totals-badge" class="scan-all-context-badge"></span>
     </div>
@@ -741,6 +751,29 @@
               </tr>
             </thead>
             <tbody id="scan-all-momentum-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="scan-all-multi-tables" style="display:none;">
+      <div style="margin-bottom:var(--spacing-4);">
+        <h4 style="margin-bottom:var(--spacing-2); font-size:var(--text-base);">All modes <span style="font-weight:400; font-size:var(--text-xs); color:var(--text-muted);">Lead desk · grouped reversal, momentum, base, then opportunity</span></h4>
+        <div class="scan-all-table-scroll" style="--scan-all-scroll-h: 960px;">
+          <table class="data-table" style="width:100%; font-size:var(--text-sm);">
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th>Ticker</th>
+                <th>Lead desk</th>
+                <th title="Rank inside the winning desk">Lead %ile</th>
+                <th>Location</th>
+                <th>Also cleared</th>
+                <th>Watchlist</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="scan-all-multi-body"></tbody>
           </table>
         </div>
       </div>
@@ -1282,19 +1315,28 @@
   #scan-all-results.lens-opportunity #scan-all-opp-tables { display: block !important; }
   #scan-all-results.lens-opportunity #scan-all-reversal-tables,
   #scan-all-results.lens-opportunity #scan-all-momentum-tables,
-  #scan-all-results.lens-opportunity #scan-all-base-tables { display: none !important; }
+  #scan-all-results.lens-opportunity #scan-all-base-tables,
+  #scan-all-results.lens-opportunity #scan-all-multi-tables { display: none !important; }
   #scan-all-results.lens-reversal #scan-all-opp-tables,
   #scan-all-results.lens-reversal #scan-all-momentum-tables,
-  #scan-all-results.lens-reversal #scan-all-base-tables { display: none !important; }
+  #scan-all-results.lens-reversal #scan-all-base-tables,
+  #scan-all-results.lens-reversal #scan-all-multi-tables { display: none !important; }
   #scan-all-results.lens-reversal #scan-all-reversal-tables { display: block !important; }
   #scan-all-results.lens-momentum #scan-all-opp-tables,
   #scan-all-results.lens-momentum #scan-all-reversal-tables,
-  #scan-all-results.lens-momentum #scan-all-base-tables { display: none !important; }
+  #scan-all-results.lens-momentum #scan-all-base-tables,
+  #scan-all-results.lens-momentum #scan-all-multi-tables { display: none !important; }
   #scan-all-results.lens-momentum #scan-all-momentum-tables { display: block !important; }
   #scan-all-results.lens-base #scan-all-opp-tables,
   #scan-all-results.lens-base #scan-all-reversal-tables,
-  #scan-all-results.lens-base #scan-all-momentum-tables { display: none !important; }
+  #scan-all-results.lens-base #scan-all-momentum-tables,
+  #scan-all-results.lens-base #scan-all-multi-tables { display: none !important; }
   #scan-all-results.lens-base #scan-all-base-tables { display: block !important; }
+  #scan-all-results.lens-multi #scan-all-opp-tables,
+  #scan-all-results.lens-multi #scan-all-reversal-tables,
+  #scan-all-results.lens-multi #scan-all-momentum-tables,
+  #scan-all-results.lens-multi #scan-all-base-tables { display: none !important; }
+  #scan-all-results.lens-multi #scan-all-multi-tables { display: block !important; }
   .momentum-compact-table th,
   .momentum-compact-table td { font-size: 11px; padding: 4px 5px; white-space: nowrap; }
   .momentum-compact-table th:nth-child(n+6):nth-child(-n+12),
@@ -1304,7 +1346,8 @@
   #scan-all-tab-opportunity.active-lens,
   #scan-all-tab-reversal.active-lens,
   #scan-all-tab-momentum.active-lens,
-  #scan-all-tab-base.active-lens { border: 1px solid var(--accent); }
+  #scan-all-tab-base.active-lens,
+  #scan-all-tab-multi.active-lens { border: 1px solid var(--accent); }
   .scan-all-header {
     display: flex;
     justify-content: space-between;
@@ -2266,6 +2309,158 @@ function watchlistGroupLabel(w) {
   return 'Other';
 }
 
+function selectedWatchlistIds() {
+  return Array.from(document.querySelectorAll('#watchlist-checks input[type="checkbox"]:checked'))
+    .map((el) => String(el.value || '').trim())
+    .filter(Boolean);
+}
+
+function updateWatchlistPickerLabel() {
+  const names = selectedWatchlistNames();
+  const label = document.getElementById('watchlist-picker-label');
+  const btn = document.getElementById('watchlist-picker-btn');
+  if (!label) return;
+  if (!names.length) label.textContent = 'Choose…';
+  else if (names.length === 1) label.textContent = names[0];
+  else label.textContent = `${names.length} watchlists`;
+  if (btn) btn.title = names.length ? names.join(', ') : 'Select one or more watchlists';
+}
+
+function toggleWatchlistPicker(forceOpen) {
+  const panel = document.getElementById('watchlist-checks');
+  const btn = document.getElementById('watchlist-picker-btn');
+  if (!panel) return;
+  const open = typeof forceOpen === 'boolean' ? forceOpen : panel.hidden;
+  panel.hidden = !open;
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('watchlist-picker');
+  if (!wrap || wrap.contains(e.target)) return;
+  toggleWatchlistPicker(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const panel = document.getElementById('watchlist-checks');
+  if (panel && !panel.hidden) toggleWatchlistPicker(false);
+});
+
+function selectedWatchlistNames() {
+  return selectedWatchlistIds().map((id) => watchlistsData[id]?.name || id);
+}
+
+function applyWatchlistPresetFromSelection() {
+  const ids = selectedWatchlistIds();
+  const presetSelect = document.getElementById('preset-select');
+  if (!presetSelect) return;
+  if (ids.length !== 1) {
+    updatePresetRecommendedBadge();
+    return;
+  }
+  if (userOverrodePreset) {
+    updatePresetRecommendedBadge();
+    return;
+  }
+  const wl = watchlistsData[ids[0]];
+  if (wl && wl.default_preset) {
+    const wanted = canonicalPresetName(wl.default_preset);
+    const optionExists = Array.from(presetSelect.options).some(o => o.value === wanted);
+    if (optionExists) {
+      presetSelect.value = wanted;
+      const panel = document.getElementById('weights-panel');
+      const sliderWeights = (presetsData[wanted] || presetsData[wl.default_preset] || {}).weights;
+      if (panel && panel.style.display !== 'none' && sliderWeights) {
+        buildWeightSliders(sliderWeights);
+      }
+    }
+  }
+  updatePresetRecommendedBadge();
+}
+
+function syncWatchlistSelectionControls() {
+  const ids = selectedWatchlistIds();
+  const runBtn = document.getElementById('run-screen-btn');
+  const selectedBtn = document.getElementById('run-selected-btn');
+  const mode = document.getElementById('scan-mode-select')?.value || 'standard';
+  if (runBtn && !runBtn.dataset.busy) runBtn.disabled = ids.length !== 1;
+  const allBtn = document.getElementById('run-all-btn');
+  const allModes = mode === 'multi_sleeve';
+  if (allBtn && !allBtn.dataset.busy) {
+    allBtn.disabled = allModes;
+    allBtn.title = allModes
+      ? 'Scan All still runs one lens. Use Scan selected to run All modes on two or more watchlists.'
+      : 'Scan every watchlist, including index buckets, on the current lens.';
+  }
+  if (selectedBtn && !selectedBtn.dataset.busy) {
+    const tooFew = ids.length < 2;
+    selectedBtn.disabled = tooFew;
+    if (tooFew && allModes) {
+      selectedBtn.title = 'Check two or more watchlists. All modes on Scan selected scores them as one union.';
+    } else if (tooFew) {
+      selectedBtn.title = 'Check two or more watchlists. Scan selected runs them as one union and does not add index buckets.';
+    } else if (allModes) {
+      selectedBtn.title = 'Score these lists once as one All modes union. Opens the All modes tab. Does not add index buckets.';
+    } else {
+      selectedBtn.title = 'Scan these lists as one union. Each ticker keeps its resolved book. Does not add index buckets.';
+    }
+  }
+  const hint = document.getElementById('scan-mode-hint');
+  if (hint) {
+    if (allModes && ids.length >= 2) {
+      hint.style.display = 'block';
+      hint.innerHTML = '<strong>Scan selected</strong> runs All modes on these lists as one union and opens the All modes tab. <strong>Scan All</strong> still runs one lens.';
+    } else if (allModes) {
+      hint.style.display = 'block';
+      hint.innerHTML = 'All modes applies to <strong>Run Scan</strong> on one watchlist. Check two or more lists to run All modes with <strong>Scan selected</strong>. Scan All still runs one lens.';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+  applyWatchlistPresetFromSelection();
+  updateWatchlistPickerLabel();
+}
+
+function fillWatchlistChecks(container, watchlists) {
+  if (!container) return;
+  container.innerHTML = '';
+  const groups = {};
+  for (const w of watchlists || []) {
+    const label = watchlistGroupLabel(w);
+    (groups[label] ||= []).push(w);
+  }
+  let any = false;
+  for (const label of WATCHLIST_GROUP_ORDER) {
+    const items = groups[label] || [];
+    if (!items.length) continue;
+    any = true;
+    const heading = document.createElement('div');
+    heading.textContent = label;
+    heading.style.cssText = 'font-size:10px; font-weight:600; color:var(--text-secondary); margin:6px 0 2px;';
+    container.appendChild(heading);
+    for (const w of items) {
+      const row = document.createElement('label');
+      row.style.cssText = 'display:flex; gap:6px; align-items:center; font-size:12px; margin:2px 0; cursor:pointer;';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = w.id;
+      box.addEventListener('change', () => {
+        userOverrodePreset = false;
+        syncWatchlistSelectionControls();
+      });
+      const text = document.createElement('span');
+      text.textContent = `${w.name} (${w.ticker_count || 0})`;
+      row.appendChild(box);
+      row.appendChild(text);
+      container.appendChild(row);
+    }
+  }
+  if (!any) {
+    container.innerHTML = '<span class="text-muted" style="font-size:12px;">No watchlists</span>';
+  }
+  syncWatchlistSelectionControls();
+}
+
 function fillWatchlistSelect(select, watchlists) {
   if (!select) return;
   select.innerHTML = '';
@@ -2892,33 +3087,7 @@ async function loadWatchlists() {
     watchlistsData = {};
     for (const w of data) { watchlistsData[w.id] = w; }
 
-    // --- Screener dropdown ---
-    const select = document.getElementById('watchlist-select');
-    fillWatchlistSelect(select, data);
-
-    select.addEventListener('change', () => {
-      userOverrodePreset = false;
-      const wl = watchlistsData[select.value];
-      const presetSelect = document.getElementById('preset-select');
-      if (wl && wl.default_preset) {
-        const wanted = canonicalPresetName(wl.default_preset);
-        const optionExists = Array.from(presetSelect.options).some(o => o.value === wanted);
-        if (optionExists) {
-          presetSelect.value = wanted;
-          const panel = document.getElementById('weights-panel');
-          const sliderWeights = (presetsData[wanted] || presetsData[wl.default_preset] || {}).weights;
-          if (panel.style.display !== 'none' && sliderWeights) {
-            buildWeightSliders(sliderWeights);
-          }
-        }
-      } else {
-        presetSelect.value = '';
-        const panel = document.getElementById('weights-panel');
-        if (panel.style.display !== 'none') { buildWeightSliders(defaultWeights); }
-      }
-      updatePresetRecommendedBadge();
-    });
-    if (data.length > 0) { select.dispatchEvent(new Event('change')); }
+    fillWatchlistChecks(document.getElementById('watchlist-checks'), data);
     updatePresetContextHint();
 
     // --- Watchlist table ---
@@ -3267,10 +3436,14 @@ async function applyBuiltinRefreshProposal() {
 function updatePresetContextHint() {
   const hint = document.getElementById('preset-select-hint');
   if (!hint) return;
-  const wlSelect = document.getElementById('watchlist-select');
+  const ids = selectedWatchlistIds();
   const presetSelect = document.getElementById('preset-select');
-  const wl = wlSelect ? watchlistsData[wlSelect.value] : null;
+  const wl = ids.length === 1 ? watchlistsData[ids[0]] : null;
   const presetVal = presetSelect ? (presetSelect.value || '') : '';
+  if (ids.length >= 2) {
+    hint.textContent = 'Scan selected uses each ticker\'s resolved book. The preset applies only to Run Scan on one list.';
+    return;
+  }
   if (presetVal) {
     const label = presetDisplayName(canonicalPresetName(presetVal));
     const isListDefault = wl?.default_preset
@@ -3284,9 +3457,9 @@ function updatePresetContextHint() {
 }
 
 function updatePresetRecommendedBadge() {
-  const wlSelect = document.getElementById('watchlist-select');
+  const ids = selectedWatchlistIds();
   const presetSelect = document.getElementById('preset-select');
-  const wl = watchlistsData[wlSelect.value];
+  const wl = ids.length === 1 ? watchlistsData[ids[0]] : null;
   const existing = presetSelect.parentElement.querySelector('.recommended-badge');
   if (existing) existing.remove();
   if (wl && wl.default_preset && canonicalPresetName(presetSelect.value) === canonicalPresetName(wl.default_preset)) {
@@ -3760,14 +3933,15 @@ async function loadPresets() {
 // Screening
 // =========================================================================
 async function runScreening(overrideWeights) {
-  const watchlistId = document.getElementById('watchlist-select').value;
+  const watchlistId = selectedWatchlistIds().length === 1 ? selectedWatchlistIds()[0] : '';
   const preset = overrideWeights ? null : (document.getElementById('preset-select').value || null);
   const date = document.getElementById('screen-date').value;
   const scanMode = document.getElementById('scan-mode-select')?.value || 'standard';
 
-  if (!watchlistId) return alert('Select a watchlist');
+  if (!watchlistId) return alert('Check exactly one watchlist');
 
   const btn = document.getElementById('run-screen-btn');
+  btn.dataset.busy = '1';
   btn.disabled = true;
   btn.textContent = 'Scanning...';
 
@@ -3802,9 +3976,17 @@ async function runScreening(overrideWeights) {
     pollScreeningJob(data.job_id, scanMode);
   } catch (e) {
     statusText.textContent = 'Error: ' + e.message;
-    btn.disabled = false;
+    releaseRunScanButton();
+  }
+}
+
+function releaseRunScanButton() {
+  const btn = document.getElementById('run-screen-btn');
+  if (btn) {
+    delete btn.dataset.busy;
     btn.textContent = 'Run Scan';
   }
+  syncWatchlistSelectionControls();
 }
 
 function screeningModeLabel(scanMode) {
@@ -3830,10 +4012,7 @@ function _showTerminalScreeningJob(job, scanMode) {
   const statusText = document.getElementById('screen-status-text');
   const btn = document.getElementById('run-screen-btn');
   if (statusEl) statusEl.style.display = '';
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = 'Run Scan';
-  }
+  releaseRunScanButton();
   if (!statusText) return;
   if (job.status === 'failed') {
     statusText.textContent = `Failed: ${job.error || 'Unknown error'}`;
@@ -3869,6 +4048,7 @@ async function resumeActiveScreeningJob() {
 
     if (statusEl) statusEl.style.display = '';
     if (btn) {
+      btn.dataset.busy = '1';
       btn.disabled = true;
       btn.textContent = 'Scanning...';
     }
@@ -3895,8 +4075,7 @@ function pollScreeningJob(jobId, scanMode) {
         if (res.status === 404) {
           clearInterval(interval);
           statusText.textContent = 'Monitoring stopped: job not found (likely from an older app session).';
-          btn.disabled = false;
-          btn.textContent = 'Run Scan';
+          releaseRunScanButton();
           return;
         }
         throw new Error(err.detail || `Polling failed (${res.status})`);
@@ -3909,8 +4088,7 @@ function pollScreeningJob(jobId, scanMode) {
         const topBit = top.length ? ` Top: ${top.join(', ')}.` : '';
         const crossBit = scanMode === 'standard' ? ' Cross-Watchlist refreshed.' : '';
         statusText.textContent = `Completed! ${job.result?.results_count || 0} tickers scored.${topBit}${crossBit}`;
-        btn.disabled = false;
-        btn.textContent = 'Run Scan';
+        releaseRunScanButton();
         loadHistory(true);
         if (scanMode === 'standard') {
           loadScanAllResults();
@@ -3918,16 +4096,14 @@ function pollScreeningJob(jobId, scanMode) {
       } else if (job.status === 'failed') {
         clearInterval(interval);
         statusText.textContent = 'Failed: ' + (job.error || 'Unknown error');
-        btn.disabled = false;
-        btn.textContent = 'Run Scan';
+        releaseRunScanButton();
       } else {
         statusText.textContent = `${modeLabel}... (${job.status})`;
       }
     } catch (e) {
       clearInterval(interval);
       statusText.textContent = 'Polling error: ' + e.message;
-      btn.disabled = false;
-      btn.textContent = 'Run Scan';
+      releaseRunScanButton();
     }
   }, 3000);
 }
@@ -4793,10 +4969,11 @@ function resolveInitialScanAllLens() {
   if (lensParam === 'momentum') return 'momentum';
   if (lensParam === 'reversal') return 'reversal';
   if (lensParam === 'base') return 'base';
+  if (lensParam === 'multi') return 'multi';
   if (lensParam === 'opportunity') return 'opportunity';
   try {
     const stored = localStorage.getItem(SCAN_ALL_LENS_KEY);
-    if (stored === 'momentum' || stored === 'reversal' || stored === 'base') return stored;
+    if (stored === 'momentum' || stored === 'reversal' || stored === 'base' || stored === 'multi') return stored;
   } catch (_) { /* ignore */ }
   return 'opportunity';
 }
@@ -4804,9 +4981,18 @@ function resolveInitialScanAllLens() {
 function syncScanAllButtonLabel() {
   const btn = document.getElementById('run-all-btn');
   if (btn && !btn.disabled) btn.textContent = scanAllButtonLabel();
-  const hint = document.getElementById('scan-mode-hint');
-  const mode = document.getElementById('scan-mode-select')?.value || 'standard';
-  if (hint) hint.style.display = mode === 'multi_sleeve' ? 'block' : 'none';
+  syncWatchlistSelectionControls();
+}
+
+function releaseScanControls() {
+  const selectedBtn = document.getElementById('run-selected-btn');
+  if (selectedBtn) delete selectedBtn.dataset.busy;
+  const allBtn = document.getElementById('run-all-btn');
+  if (allBtn) {
+    allBtn.disabled = false;
+    allBtn.textContent = scanAllButtonLabel();
+  }
+  syncWatchlistSelectionControls();
 }
 
 function applyScanAllLensClass(lens) {
@@ -4816,14 +5002,16 @@ function applyScanAllLensClass(lens) {
   card.classList.toggle('lens-reversal', lens === 'reversal');
   card.classList.toggle('lens-momentum', lens === 'momentum');
   card.classList.toggle('lens-base', lens === 'base');
+  card.classList.toggle('lens-multi', lens === 'multi');
   document.getElementById('scan-all-tab-opportunity')?.classList.toggle('active-lens', lens === 'opportunity');
   document.getElementById('scan-all-tab-reversal')?.classList.toggle('active-lens', lens === 'reversal');
   document.getElementById('scan-all-tab-momentum')?.classList.toggle('active-lens', lens === 'momentum');
   document.getElementById('scan-all-tab-base')?.classList.toggle('active-lens', lens === 'base');
+  document.getElementById('scan-all-tab-multi')?.classList.toggle('active-lens', lens === 'multi');
 }
 
 function setScanAllLens(lens, { persist = true, reload = true } = {}) {
-  const allowed = { reversal: 'reversal', momentum: 'momentum', base: 'base', opportunity: 'opportunity' };
+  const allowed = { reversal: 'reversal', momentum: 'momentum', base: 'base', multi: 'multi', opportunity: 'opportunity' };
   scanAllLens = allowed[lens] || 'opportunity';
   applyScanAllLensClass(scanAllLens);
   if (scanAllLens === 'momentum') applyMomentumScanAllDefaults();
@@ -4833,6 +5021,56 @@ function setScanAllLens(lens, { persist = true, reload = true } = {}) {
   if (reload) loadScanAllResults();
 }
 
+async function runSelectedWatchlists() {
+  const ids = selectedWatchlistIds().map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id));
+  const scanMode = currentScanMode();
+  if (ids.length < 2) { showToast('Check two or more watchlists', 'error'); return; }
+  const btn = document.getElementById('run-selected-btn');
+  const allBtn = document.getElementById('run-all-btn');
+  const scanBtn = document.getElementById('run-screen-btn');
+  const statusEl = document.getElementById('screen-all-status');
+  const titleEl = document.getElementById('screen-all-title');
+  const counterEl = document.getElementById('screen-all-counter');
+  const barEl = document.getElementById('screen-all-bar');
+  const detailEl = document.getElementById('screen-all-detail');
+  const names = selectedWatchlistNames().join(', ');
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  allBtn.disabled = true;
+  scanBtn.disabled = true;
+  statusEl.style.display = 'block';
+  titleEl.textContent = `Scanning ${names}...`;
+  counterEl.textContent = '';
+  barEl.style.width = '0%';
+  barEl.style.background = 'var(--accent)';
+  detailEl.textContent = 'Preparing...';
+  try {
+    const res = await fetch('/api/screen-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: scanMode, watchlist_ids: ids }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const label = Array.isArray(data.watchlist_names) && data.watchlist_names.length
+      ? data.watchlist_names.join(', ')
+      : names;
+    titleEl.textContent = `Scanning ${label} (${data.ticker_count} tickers)...`;
+    counterEl.textContent = `0 / ${data.watchlist_count}`;
+    activeScreenAllJobId = data.job_id;
+    const stopBtn = document.getElementById('screen-all-stop-btn');
+    if (stopBtn) stopBtn.style.display = '';
+    pollScreenAll(data.job_id, data.watchlist_count, scanMode, label);
+  } catch (e) {
+    showToast('Scan selected failed: ' + e.message, 'error');
+    titleEl.textContent = 'Error: ' + e.message;
+    releaseScanControls();
+  }
+}
+
 async function runScreenAll() {
   const btn = document.getElementById('run-all-btn');
   const scanBtn = document.getElementById('run-screen-btn');
@@ -4840,6 +5078,11 @@ async function runScreenAll() {
   btn.disabled = true;
   btn.textContent = 'Starting...';
   scanBtn.disabled = true;
+  const selectedBtn = document.getElementById('run-selected-btn');
+  if (selectedBtn) {
+    selectedBtn.dataset.busy = '1';
+    selectedBtn.disabled = true;
+  }
 
   const statusEl = document.getElementById('screen-all-status');
   const titleEl = document.getElementById('screen-all-title');
@@ -4878,9 +5121,7 @@ async function runScreenAll() {
     titleEl.textContent = 'Error: ' + e.message;
     barEl.style.width = '0%';
     barEl.style.background = 'var(--qa-red)';
-    btn.disabled = false;
-    btn.textContent = scanAllButtonLabel();
-    scanBtn.disabled = false;
+    releaseScanControls();
   }
 }
 
@@ -4906,7 +5147,7 @@ async function cancelScreenAllJob() {
   }
 }
 
-function pollScreenAll(jobId, totalWatchlists, screenMode) {
+function pollScreenAll(jobId, totalWatchlists, screenMode, progressLabel) {
   const btn = document.getElementById('run-all-btn');
   const scanBtn = document.getElementById('run-screen-btn');
   const titleEl = document.getElementById('screen-all-title');
@@ -4945,9 +5186,7 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
           titleEl.textContent = 'Batch scan monitor expired';
           detailEl.textContent = 'Job not found (likely from an older app session). Start a new Scan All run.';
           if (elapsedEl) elapsedEl.style.display = 'none';
-          btn.disabled = false;
-          btn.textContent = scanAllButtonLabel();
-          scanBtn.disabled = false;
+          releaseScanControls();
           // Results may already exist in DB even if in-memory job state was lost.
           loadScanAllResults();
           return;
@@ -4986,7 +5225,7 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
         const r = job.result || {};
         barEl.style.width = '100%';
         barEl.style.background = 'var(--qa-green)';
-        titleEl.textContent = 'Batch scan complete!';
+        titleEl.textContent = progressLabel ? `Scan complete: ${progressLabel}` : 'Batch scan complete!';
         counterEl.textContent = `${r.watchlists_scanned || 0} / ${totalWatchlists}`;
         let msg = `${r.total_results || 0} tickers scored across ${r.watchlists_scanned || 0} watchlists`;
         if (r.duration_seconds) msg += ` in ${_formatElapsed(r.duration_seconds)}`;
@@ -4995,11 +5234,15 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
         } else {
           msg += '.';
         }
+        if (r.partial) {
+          const n = r.partial_ticker_count || (r.partial_watchlists || []).length;
+          msg += ` ⚠ PARTIAL: ${n} ${r.partial_ticker_count ? 'tickers' : 'watchlists'} not fully scored (timeout/budget).`;
+          titleEl.textContent = 'Scan complete (partial)';
+          barEl.style.background = 'var(--qa-amber)';
+        }
         detailEl.textContent = msg;
         if (elapsedEl && r.duration_seconds) elapsedEl.textContent = _formatElapsed(r.duration_seconds);
-        btn.disabled = false;
-        btn.textContent = scanAllButtonLabel();
-        scanBtn.disabled = false;
+        releaseScanControls();
         loadHistory(true);
         if (screenMode === 'reversal_buildup') {
           setScanAllLens('reversal', { persist: true, reload: true });
@@ -5007,6 +5250,8 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
           setScanAllLens('momentum', { persist: true, reload: true });
         } else if (screenMode === 'base_coil') {
           setScanAllLens('base', { persist: true, reload: true });
+        } else if (screenMode === 'multi_sleeve') {
+          setScanAllLens('multi', { persist: true, reload: true });
         } else {
           setScanAllLens('opportunity', { persist: true, reload: true });
         }
@@ -5021,9 +5266,7 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
         barEl.style.background = 'var(--qa-amber)';
         titleEl.textContent = 'Batch scan cancelled';
         detailEl.textContent = job.error || 'Cancelled by operator';
-        btn.disabled = false;
-        btn.textContent = scanAllButtonLabel();
-        scanBtn.disabled = false;
+        releaseScanControls();
         activeScreenAllJobId = null;
         const stopBtn = document.getElementById('screen-all-stop-btn');
         if (stopBtn) stopBtn.style.display = 'none';
@@ -5035,9 +5278,10 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
         barEl.style.background = 'var(--qa-red)';
         titleEl.textContent = 'Batch scan failed';
         detailEl.textContent = job.error || 'Unknown error';
-        btn.disabled = false;
-        btn.textContent = scanAllButtonLabel();
-        scanBtn.disabled = false;
+        releaseScanControls();
+        activeScreenAllJobId = null;
+        const failStopBtn = document.getElementById('screen-all-stop-btn');
+        if (failStopBtn) failStopBtn.style.display = 'none';
       }
     } catch (e) {
       clearInterval(interval);
@@ -5045,9 +5289,7 @@ function pollScreenAll(jobId, totalWatchlists, screenMode) {
       _cleanup();
       titleEl.textContent = 'Polling error';
       detailEl.textContent = e.message;
-      btn.disabled = false;
-      btn.textContent = scanAllButtonLabel();
-      scanBtn.disabled = false;
+      releaseScanControls();
     }
   }, 4000);
   scanAllPollTimer = interval;
@@ -5202,7 +5444,8 @@ function scanAllViewParams() {
     book: document.getElementById('scan-all-book')?.value || 'all',
     strategy: scanAllLens === 'reversal' ? 'reversal_buildup'
       : (scanAllLens === 'momentum' ? 'early_momentum'
-      : (scanAllLens === 'base' ? 'base_coil' : 'standard')),
+      : (scanAllLens === 'base' ? 'base_coil'
+      : (scanAllLens === 'multi' ? 'multi_sleeve' : 'standard'))),
   });
   if (document.getElementById('scan-all-filter-liquidity')?.checked) params.set('hide_illiquid', 'true');
   if (document.getElementById('scan-all-filter-blackout')?.checked) params.set('hide_blackout', 'true');
@@ -5217,14 +5460,15 @@ async function loadScanAllResults() {
     const res = await fetch(`/api/screen-all/latest?${params.toString()}`);
     if (!res.ok) {
       clearScanAllBoardDom();
-      if (scanAllLens === 'reversal' || scanAllLens === 'momentum' || scanAllLens === 'base') {
+      if (scanAllLens === 'reversal' || scanAllLens === 'momentum' || scanAllLens === 'base' || scanAllLens === 'multi') {
         document.getElementById('scan-all-results').style.display = 'block';
         applyScanAllLensClass(scanAllLens);
         const badge = document.getElementById('scan-all-totals-badge');
         if (badge) {
           badge.textContent = scanAllLens === 'momentum'
             ? 'Momentum · no runs yet'
-            : (scanAllLens === 'base' ? 'Base · no runs yet' : 'Reversal · no runs yet');
+            : (scanAllLens === 'base' ? 'Base · no runs yet'
+            : (scanAllLens === 'multi' ? 'All modes · no runs yet' : 'Reversal · no runs yet'));
         }
         syncScanAllActionLabels({ lens: scanAllLens });
         updateScanAllViewHint({ lens: scanAllLens });
@@ -5235,7 +5479,9 @@ async function loadScanAllResults() {
             ? 'No momentum runs yet. Set Scan mode = Early momentum, then Scan All.'
             : (scanAllLens === 'base'
               ? 'No base Scan All yet. Names still inside the range appear here after Scan All with Scan mode = Base. Single-list runs stay in Screening History.'
-              : 'No reversal Scan All batch yet. Run Scan All with Scan mode = Reversal buildup (single-list runs stay in Screening Results).');
+              : (scanAllLens === 'multi'
+                ? 'No All modes batch yet. Check two or more watchlists and run Scan selected with Scan mode = All modes.'
+                : 'No reversal Scan All batch yet. Run Scan All with Scan mode = Reversal buildup (single-list runs stay in Screening Results).'));
         }
         return;
       }
@@ -5246,7 +5492,8 @@ async function loadScanAllResults() {
     scanAllPayload = data;
     const resolvedLens = data.lens === 'reversal' ? 'reversal'
       : (data.lens === 'momentum' ? 'momentum'
-      : (data.lens === 'base' ? 'base' : 'opportunity'));
+      : (data.lens === 'base' ? 'base'
+      : (data.lens === 'multi' ? 'multi' : 'opportunity')));
     applyScanAllLensClass(resolvedLens);
     renderScanAllResults(data);
     document.getElementById('scan-all-results').style.display = 'block';
@@ -5596,7 +5843,7 @@ function clearScanAllBoardDom() {
   if (summ) summ.innerHTML = '';
   const stratified = document.getElementById('scan-all-stratified');
   if (stratified) stratified.innerHTML = '';
-  ['scan-all-top-body', 'scan-all-bottom-body', 'scan-all-long-body', 'scan-all-short-body', 'scan-all-momentum-body', 'scan-all-base-body'].forEach((id) => {
+  ['scan-all-top-body', 'scan-all-bottom-body', 'scan-all-long-body', 'scan-all-short-body', 'scan-all-momentum-body', 'scan-all-base-body', 'scan-all-multi-body'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '';
   });
@@ -5891,32 +6138,54 @@ function filterReversalAllRows(rows) {
   });
 }
 
+function selectedWatchlistStatusLine(data) {
+  const names = Array.isArray(data?.selected_watchlist_names)
+    ? data.selected_watchlist_names.filter(Boolean)
+    : [];
+  return names.length ? `Selected: ${names.join(', ')}` : '';
+}
+
+function watchlistBreadthBadge(r) {
+  const extra = r.watchlist_breadth > 1 ? ` +${r.watchlist_breadth - 1}` : '';
+  const title = (r.watchlists || [r.watchlist_name || '—']).join(', ');
+  return `<span class="badge" title="${title}" style="display:inline-block; max-width:100px; font-size:10px; background:var(--bg-secondary); border:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;">${r.watchlist_name || '—'}${extra}</span>`;
+}
+
+function fillScanAllStatus(data, trailing) {
+  const status = document.getElementById('scan-all-status');
+  if (!status) return;
+  const bits = [];
+  const selected = selectedWatchlistStatusLine(data);
+  if (selected) bits.push(selected);
+  const mixLine = formatScanAllSourceMix(data);
+  if (data.source_mode === 'mixed') {
+    if (mixLine) bits.push(mixLine);
+    const from = data.batch_window?.from;
+    const to = data.batch_window?.to;
+    if (from && to && from !== to) bits.push('mixed vintage');
+  } else if (data.source_mode && data.source_mode !== 'selected_watchlists') {
+    bits.push(`Mode: ${data.source_mode}`);
+    if (mixLine) bits.push(mixLine);
+  } else if (mixLine) {
+    bits.push(mixLine);
+  }
+  if (data.universe_truncated) bits.push(`Universe truncated to ${data.universe_scanned || 'configured cap'} tickers`);
+  if (data.scan_health && data.scan_health.partial) {
+    bits.push(`⚠ PARTIAL scan: ${data.scan_health.partial_ticker_count || 'some'} tickers not scored (timeout/budget) - lead percentiles are approximate`);
+  }
+  const extraBits = Array.isArray(trailing) ? trailing : (trailing ? [trailing] : []);
+  for (const bit of extraBits) if (bit) bits.push(bit);
+  status.textContent = bits.join(' · ');
+  status.style.display = bits.length ? 'block' : 'none';
+}
+
 function renderReversalAllResults(data) {
   const totals = data.totals || {};
   const badge = document.getElementById('scan-all-totals-badge');
   if (badge) badge.textContent = formatScanAllTotalsBadge(data);
   syncScanAllActionLabels(data);
   updateScanAllViewHint(data);
-  const status = document.getElementById('scan-all-status');
-  if (status) {
-    const bits = [];
-    const mixLine = formatScanAllSourceMix(data);
-    if (data.source_mode === 'mixed') {
-      if (mixLine) bits.push(mixLine);
-      const from = data.batch_window?.from;
-      const to = data.batch_window?.to;
-      if (from && to && from !== to) bits.push('mixed vintage');
-    } else if (data.source_mode) {
-      bits.push(`Mode: ${data.source_mode}`);
-      if (mixLine) bits.push(mixLine);
-    } else if (mixLine) {
-      bits.push(mixLine);
-    }
-    if (data.universe_truncated) bits.push(`Universe truncated to ${data.universe_scanned || 'configured cap'} tickers`);
-    bits.push('Ranked by reversal buildup (early + confirmed default)');
-    status.textContent = bits.join(' · ');
-    status.style.display = bits.length ? 'block' : 'none';
-  }
+  fillScanAllStatus(data, 'Ranked by reversal buildup (early + confirmed default)');
 
   const summContainer = document.getElementById('scan-all-summaries');
   summContainer.innerHTML = (data.watchlist_summaries || []).map(wl => {
@@ -6065,7 +6334,7 @@ function momentumAllRowHtml(r, i) {
     <td>${riskScoreCell(r.risk_score, r.risk_components)}</td>
     <td title="${eqTip}">${entryQualityCell(r.entry_quality)}</td>
     <td>${momentumMacroFitCell(r)}</td>
-    <td style="max-width:110px;"><span class="badge" style="font-size:10px;">${r.watchlist_name || '—'}</span></td>
+    <td style="max-width:110px;">${watchlistBreadthBadge(r)}</td>
     <td><button class="btn btn-sm" onclick="event.stopPropagation(); enqueueAnalyzeFromScreener('${r.ticker}', ${wlArg}, this, ${r.run_id || 'null'})">Analyze</button></td>
   </tr>`;
 }
@@ -6076,6 +6345,7 @@ function renderMomentumAllResults(data) {
   if (badge) badge.textContent = `Momentum · ${data?.totals?.visible_tickers || 0} names · avg ${data?.totals?.avg_momentum_score || 0}`;
   syncScanAllActionLabels(data);
   updateScanAllViewHint(data);
+  fillScanAllStatus(data, 'Ranked by early momentum');
   const summContainer = document.getElementById('scan-all-summaries');
   summContainer.innerHTML = (data.watchlist_summaries || []).map(wl => `
     <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:var(--spacing-3); cursor:pointer;" onclick="loadRunResults(${wl.run_id})" title="Click to view this ${wl.source || 'scan_all'} momentum run">
@@ -6156,7 +6426,7 @@ function baseAllRowHtml(r, i) {
     <td>${baseVolCell(vol)}</td>
     <td>${baseTrendCell(trend)}</td>
     <td>${baseDistCell(dist)}</td>
-    <td style="max-width:110px;"><span class="badge" style="font-size:10px;">${r.watchlist_name || '—'}</span></td>
+    <td style="max-width:110px;">${watchlistBreadthBadge(r)}</td>
     <td><button class="btn btn-sm" onclick="event.stopPropagation(); enqueueAnalyzeFromScreener('${r.ticker}', ${wlArg}, this, ${r.run_id || 'null'})">Analyze</button></td>
   </tr>`;
 }
@@ -6166,6 +6436,7 @@ function renderBaseAllResults(data) {
   if (badge) badge.textContent = `Base · ${data?.totals?.visible_tickers || 0} names · avg coil ${data?.totals?.avg_base_score || 0}`;
   syncScanAllActionLabels(data);
   updateScanAllViewHint(data);
+  fillScanAllStatus(data, 'Ranked by base coil');
   const summContainer = document.getElementById('scan-all-summaries');
   summContainer.innerHTML = (data.watchlist_summaries || []).map(wl => `
     <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:var(--spacing-3); cursor:pointer;" onclick="loadRunResults(${wl.run_id})" title="Click to view this ${wl.source || 'scan_all'} base run">
@@ -6178,6 +6449,106 @@ function renderBaseAllResults(data) {
   const rows = data.top_opportunities || [];
   const body = document.getElementById('scan-all-base-body');
   if (body) body.innerHTML = rows.map((r, i) => baseAllRowHtml(r, i)).join('') || '<tr><td colspan="10" class="text-muted">No names still inside the range. Single-list runs stay in Screening History.</td></tr>';
+  applyScanAllScrollHeightToDom();
+}
+
+function multiAllRowHtml(r, i) {
+  const ms = r.multi_sleeve || (r.signals || {})._multi_sleeve || {};
+  const leadSleeve = r.lead_sleeve || ms.lead_sleeve || '';
+  const leadPct = r.lead_percentile != null ? r.lead_percentile : ms.lead_percentile;
+  const leadScore = r.lead_score != null ? r.lead_score : ms.lead_score;
+  const leadSide = r.lead_side || ms.lead_side || '';
+  const leadPhase = r.lead_phase || ms.lead_phase || '';
+  const leadColors = { reversal: '#7c3aed', momentum: '#d97706', base: '#059669', opportunity: '#2563eb' };
+  const leadScoreHtml = leadScore != null && Number.isFinite(Number(leadScore))
+    ? `<div style="font-weight:700;font-size:13px;line-height:1.2;">${Number(leadScore).toFixed(1)}</div>`
+    : '';
+  const leadLabel = leadSleeve === 'reversal'
+    ? (leadSide ? `reversal · ${leadSide}` : 'reversal')
+    : (leadSleeve || '—');
+  const leadTitle = leadSleeve === 'reversal'
+    ? `Reversal desk · ${leadPhase} ${leadSide}`.trim()
+    : (leadSleeve === 'momentum'
+      ? 'Momentum confirmed or high-conviction'
+      : (leadSleeve === 'opportunity' ? 'Opportunity with Entry ≥ 60' : (leadSleeve === 'base' ? 'Base coil' : '')));
+  const leadBadge = leadSleeve
+    ? `${leadScoreHtml}<span class="badge" style="font-size:10px;background:${leadColors[leadSleeve] || 'var(--bg-secondary)'};color:#fff;" title="${_escapeHtml(leadTitle)}">${_escapeHtml(leadLabel)}</span>`
+    : '<span class="text-muted" title="No sleeve cleared its desk">—</span>';
+  const pctHtml = leadPct != null && Number.isFinite(Number(leadPct))
+    ? `<strong>${Number(leadPct).toFixed(0)}%</strong>`
+    : '<span class="text-muted">—</span>';
+  const also = alsoDeskHtml(leadSleeve, r.cleared || ms.cleared) || '<span class="text-muted">—</span>';
+  const wlArg = r.watchlist_id != null ? r.watchlist_id : 'null';
+  return `<tr class="expand-row" onclick="toggleExpandRow('${r.ticker}', this)" title="Click to expand ${r.ticker} details">
+    <td style="text-align:center; color:var(--text-secondary);">${i + 1}</td>
+    <td><strong>${_escapeHtml(r.ticker || '')}</strong>${assetClassBadge(r.asset_class)}</td>
+    <td>${leadBadge}</td>
+    <td title="Rank inside the winning desk. A high percent is the top of that group, not a higher-quality trade.">${pctHtml}</td>
+    <td>${locationBadge(r.location || ms.location)}</td>
+    <td>${also}</td>
+    <td style="max-width:110px;">${watchlistBreadthBadge(r)}</td>
+    <td><button class="btn btn-sm" onclick="event.stopPropagation(); enqueueAnalyzeFromScreener('${r.ticker}', ${wlArg}, this, ${r.run_id || 'null'})">Analyze</button></td>
+  </tr>`;
+}
+
+function renderMultiAllResults(data) {
+  const totals = data.totals || {};
+  const badge = document.getElementById('scan-all-totals-badge');
+  const unique = totals.unique_tickers || (data.top_opportunities || []).length;
+  if (badge) badge.textContent = `All modes · ${unique} names`;
+  syncScanAllActionLabels({ lens: 'multi' });
+  updateScanAllViewHint({ lens: 'multi' });
+  fillScanAllStatus(data, [
+    `${totals.reversal_count || 0} reversal`,
+    `${totals.momentum_count || 0} momentum`,
+    `${totals.base_count || 0} base`,
+    `${totals.opportunity_count || 0} opportunity`,
+  ]);
+  const summContainer = document.getElementById('scan-all-summaries');
+  if (summContainer) {
+    summContainer.innerHTML = (data.watchlist_summaries || []).map(wl => `
+    <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:var(--spacing-3); cursor:pointer;" onclick="loadRunResults(${wl.run_id})" title="Click to view full results for ${wl.watchlist_name}">
+      <div style="font-weight:600; font-size:var(--text-sm); margin-bottom:4px;">${wl.watchlist_name}${scanAllSourceBadge(wl.source)}</div>
+      <div style="font-size:20px;font-weight:700;">${wl.avg_score}</div>
+      <div style="font-size:10px;color:var(--text-secondary);">${wl.ticker_count || 0} scored</div>
+      <div style="margin-top:4px;font-size:10px;color:var(--accent);">Top: ${wl.top_ticker || '—'} (${wl.top_score || 0})</div>
+      <div style="margin-top:2px;font-size:10px;color:var(--text-muted);">${formatScanAllRunAt(wl.run_at) || ''}</div>
+    </div>`).join('');
+  }
+  scanAllResults = mergeScanAllDetailRows(data);
+  const rows = data.top_opportunities || [];
+  const body = document.getElementById('scan-all-multi-body');
+  const deskOrder = ['reversal', 'momentum', 'base', 'opportunity'];
+  const deskTitles = {
+    reversal: 'Reversal',
+    momentum: 'Momentum',
+    base: 'Base',
+    opportunity: 'Opportunity',
+  };
+  const groups = new Map();
+  rows.forEach((row) => {
+    const ms = row.multi_sleeve || (row.signals || {})._multi_sleeve || {};
+    const lead = row.lead_sleeve || ms.lead_sleeve || 'none';
+    const key = deskOrder.includes(lead) ? lead : 'none';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+  const html = [];
+  let rank = 0;
+  const emit = (key, title) => {
+    const group = groups.get(key) || [];
+    if (!group.length) return;
+    html.push(`<tr><td colspan="8" style="font-size:11px;font-weight:700;color:var(--text-secondary);background:var(--bg-secondary);">${title} · ${group.length}</td></tr>`);
+    group.forEach((row) => {
+      rank += 1;
+      html.push(multiAllRowHtml(row, rank - 1));
+    });
+  };
+  deskOrder.forEach((key) => emit(key, deskTitles[key]));
+  emit('none', 'No lead');
+  if (body) {
+    body.innerHTML = html.join('') || '<tr><td colspan="8" class="text-muted">No All modes names yet. Check two or more watchlists and run Scan selected.</td></tr>';
+  }
   applyScanAllScrollHeightToDom();
 }
 
@@ -6195,32 +6566,19 @@ function renderScanAllResults(data) {
     renderBaseAllResults(data);
     return;
   }
+  if (data.lens === 'multi') {
+    renderMultiAllResults(data);
+    return;
+  }
   const totals = data.totals || {};
   const badge = document.getElementById('scan-all-totals-badge');
   if (badge) badge.textContent = formatScanAllTotalsBadge(data);
   syncScanAllActionLabels(data);
   updateScanAllViewHint(data);
-  const status = document.getElementById('scan-all-status');
-  if (status) {
-    const statusBits = [];
-    const mixLine = formatScanAllSourceMix(data);
-    if (data.source_mode === 'mixed') {
-      if (mixLine) statusBits.push(mixLine);
-      const from = data.batch_window?.from;
-      const to = data.batch_window?.to;
-      if (from && to && from !== to) statusBits.push('mixed vintage');
-    } else if (data.source_mode) {
-      statusBits.push(`Mode: ${data.source_mode}`);
-      if (mixLine) statusBits.push(mixLine);
-    } else if (mixLine) {
-      statusBits.push(mixLine);
-    }
-    if (data.universe_truncated) statusBits.push(`Universe truncated to ${data.universe_scanned || 'configured cap'} tickers`);
-    if (totals.weekly_hydrated_count) statusBits.push(`MTF +${totals.weekly_hydrated_count}`);
-    if (totals.weekly_insufficient_history_count) statusBits.push(`${totals.weekly_insufficient_history_count} lacked weekly history`);
-    status.textContent = statusBits.join(' · ');
-    status.style.display = statusBits.length ? 'block' : 'none';
-  }
+  const extras = [];
+  if (totals.weekly_hydrated_count) extras.push(`MTF +${totals.weekly_hydrated_count}`);
+  if (totals.weekly_insufficient_history_count) extras.push(`${totals.weekly_insufficient_history_count} lacked weekly history`);
+  fillScanAllStatus(data, extras);
 
   // Watchlist summary cards
   const summContainer = document.getElementById('scan-all-summaries');
@@ -6396,7 +6754,7 @@ function applyScanStrategy(strategy) {
       ? 'early_momentum'
       : ((raw === 'base_coil' || raw === 'base_coil_union')
         ? 'base_coil'
-        : (raw === 'multi_sleeve' ? 'multi_sleeve' : 'standard')));
+        : ((raw === 'multi_sleeve' || raw === 'multi_sleeve_union') ? 'multi_sleeve' : 'standard')));
   const section = document.getElementById('results-section');
   if (section) {
     section.classList.toggle('mode-reversal', currentScanStrategy === 'reversal_buildup');
@@ -7633,7 +7991,7 @@ function batchTopN(n) {
   if (!source.length) return;
   const topTickers = source.slice(0, n).map(r => r.ticker);
   // Auto-resolve investment profile from the selected watchlist
-  const wlId = document.getElementById('watchlist-select')?.value;
+  const wlId = selectedWatchlistIds().length === 1 ? selectedWatchlistIds()[0] : '';
   const wl = wlId ? watchlistsData[wlId] : null;
   const profile = (wl && wl.default_investment_profile) ? wl.default_investment_profile : '';
   let url = `/batch?tickers=${topTickers.join(',')}`;
@@ -9473,7 +9831,7 @@ function historyRunBucket(strategy) {
   if (s === 'base_coil' || s === 'base_coil_union') return 'base';
   if (s === 'early_momentum' || s === 'early_momentum_union') return 'momentum';
   if (s === 'reversal_buildup' || s === 'reversal_all_union') return 'reversal';
-  if (s === 'multi_sleeve') return 'multi';
+  if (s === 'multi_sleeve' || s === 'multi_sleeve_union') return 'multi';
   if (s.startsWith('qa_') || s === 'smoke_test') return 'qa';
   if (s === 'long_horizon' || s === 'movers') return 'other';
   return 'other';
@@ -9522,7 +9880,7 @@ function historyStrategyBadges(strategy) {
   if (['base_coil', 'base_coil_union'].includes(s)) {
     return ' <span class="badge" style="font-size:9px;margin-left:4px;">Base</span>';
   }
-  if (s === 'multi_sleeve') {
+  if (s === 'multi_sleeve' || s === 'multi_sleeve_union') {
     return ' <span class="badge" style="font-size:9px;margin-left:4px;">All modes</span>';
   }
   if (s === 'screen_all' || s === 'screen_all_union') {

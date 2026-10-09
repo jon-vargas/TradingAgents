@@ -168,6 +168,18 @@ DEFAULT_CONFIG = {
             # Keep aligned with hard_max_watchlist_size so Scan All reports an
             # accurate scanned universe (deduped union, not raw watchlist sum).
             "union_max_tickers": 3250,
+            # Wall-clock budgets passed to engine.scan() so a hung Yahoo call
+            # degrades to a partial result instead of pinning the job.
+            # Union budget = base + per_ticker * universe size (3,250 tickers
+            # historically ~3,100s; 230 tickers ~1,700s budget).
+            "union_time_budget_base_seconds": 1200,
+            "union_time_budget_per_ticker_seconds": 2.0,
+            "per_watchlist_time_budget_seconds": 900,
+            # Job watchdog: fails a job (and dumps thread stacks) that stops
+            # reporting progress or outlives budget + grace.
+            "watchdog_stall_seconds": 1800,
+            "watchdog_grace_seconds": 900,
+            "watchdog_job_max_seconds": 14400,
             # Max gap (minutes) between consecutive watchlist runs to treat as
             # one Scan All batch. Long batches can run 60–90 min end-to-end.
             "batch_gap_minutes": 45,
@@ -776,6 +788,9 @@ DEFAULT_CONFIG = {
             "live_median_blend": 0.40,
         },
         "ohlcv_lookback_days": 420,
+        # Hard wall-clock bounds per yfinance bulk download (see engine._guarded_download).
+        "download_hard_timeout_seconds": 120,
+        "download_lock_wait_seconds": 150,
 
         # Scheduler settings (ScreeningScheduler)
         "scheduler": {

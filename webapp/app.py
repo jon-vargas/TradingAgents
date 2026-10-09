@@ -11,6 +11,11 @@ from io import StringIO
 from pathlib import Path
 import threading
 from threading import Lock
+
+# Captured at import so tests that patch ``threading.Thread`` to run inline still
+# spawn the scan-all watchdog on a real background thread (avoids infinite loops
+# when ``_time.sleep`` is mocked).
+_RealBackgroundThread = threading.Thread
 from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -441,6 +446,10 @@ class ScreenAllRequest(BaseModel):
         "standard",
         description="Scan strategy: standard | reversal_buildup | early_momentum. Independent of scan_all.mode (per_watchlist | union_buckets).",
     )
+    watchlist_ids: Optional[List[int]] = Field(
+        None,
+        description="When two or more ids are set, scan only those lists as one union. Omit to scan every eligible list.",
+    )
     db_path: str = "research.db"
 
 
@@ -585,7 +594,131 @@ def _update_job(job_id: str, **updates: object) -> None:
     with _jobs_lock:
         job = _jobs.get(job_id, {})
         job.update(updates)
+        if "progress" in updates:
+            job["progress_updated_at"] = _time.time()
         _jobs[job_id] = job
+
+
+_JOB_TERMINAL_STATUSES = ("completed", "failed", "cancelled")
+
+
+def _job_is_terminal(job_id: str) -> bool:
+    with _jobs_lock:
+        return (_jobs.get(job_id) or {}).get("status") in _JOB_TERMINAL_STATUSES
+
+
+def _scan_health(engine: object) -> Dict[str, Any]:
+    """Partial/skip summary from the engine (empty dict for engines without it)."""
+    fn = getattr(engine, "get_scan_health", None)
+    if not callable(fn):
+        return {}
+    try:
+        health = fn()
+        return health if isinstance(health, dict) else {}
+    except Exception:
+        logger.debug("get_scan_health failed", exc_info=True)
+        return {}
+
+
+def _scan_all_budgets(universe_size: int, n_watchlists: int, scan_mode: str) -> Dict[str, float]:
+    """Wall-clock budgets for a Scan All / Scan selected job (config-driven)."""
+    from tradingagents.default_config import DEFAULT_CONFIG
+
+    cfg = DEFAULT_CONFIG.get("screening", {}).get("scan_all", {}) or {}
+    union_budget = float(cfg.get("union_time_budget_base_seconds", 1200)) + float(
+        cfg.get("union_time_budget_per_ticker_seconds", 2.0)
+    ) * max(0, int(universe_size))
+    per_wl = float(cfg.get("per_watchlist_time_budget_seconds", 900))
+    grace = float(cfg.get("watchdog_grace_seconds", 900))
+    stall = float(cfg.get("watchdog_stall_seconds", 1800))
+    job_max = float(cfg.get("watchdog_job_max_seconds", 14400))
+    if scan_mode == "union_buckets":
+        hard = union_budget + grace
+    else:
+        hard = max(1, n_watchlists) * (per_wl + 30.0) + grace
+        stall = max(stall, per_wl + 600.0)
+    return {
+        "union_budget": union_budget,
+        "per_watchlist_budget": per_wl,
+        "stall_seconds": stall,
+        "hard_limit_seconds": min(job_max, hard),
+    }
+
+
+def _start_job_watchdog(
+    job_id: str,
+    *,
+    worker_name: str,
+    stall_seconds: float,
+    hard_limit_seconds: float,
+    poll_seconds: float = 15.0,
+) -> threading.Thread:
+    """Fail a job that stalls or outlives its hard limit.
+
+    Python cannot kill the worker thread, so the watchdog (1) logs and stores a
+    stack dump, (2) sets ``cancel_requested`` so the engine stops between
+    chunks, and (3) marks the job ``failed`` so it never sits ``running``.
+    """
+    from tradingagents.dataflows.thread_diagnostics import (
+        find_thread,
+        format_all_thread_stacks,
+        thread_stack,
+    )
+
+    def _watch() -> None:
+        started = _time.time()
+        while True:
+            _time.sleep(poll_seconds)
+            with _jobs_lock:
+                job = _jobs.get(job_id)
+                if not job or job.get("status") in _JOB_TERMINAL_STATUSES:
+                    return
+                if job.get("status") != "running":
+                    continue
+                last = float(job.get("progress_updated_at") or job.get("started_ts") or started)
+            now = _time.time()
+            reason = None
+            if now - started > hard_limit_seconds:
+                reason = f"exceeded hard limit of {hard_limit_seconds:.0f}s"
+            elif now - last > stall_seconds:
+                reason = f"no progress for {now - last:.0f}s (stall limit {stall_seconds:.0f}s)"
+            if reason is None:
+                continue
+            worker_stack = thread_stack(find_thread(worker_name))
+            logger.error(
+                "scan-all watchdog: job %s %s. Worker stack:\n%s\nAll threads:\n%s",
+                job_id, reason, worker_stack, format_all_thread_stacks(3000),
+            )
+            with _jobs_lock:
+                job = _jobs.get(job_id)
+                if not job or job.get("status") in _JOB_TERMINAL_STATUSES:
+                    return
+                job["cancel_requested"] = True
+                job["watchdog"] = {
+                    "reason": reason,
+                    "at": datetime.now(timezone.utc).isoformat(),
+                    "last_progress": job.get("progress"),
+                    "worker_stack": worker_stack,
+                }
+            _update_job(
+                job_id,
+                status="failed",
+                error=f"scan_all_timeout: {reason}",
+                ended_at=datetime.now(timezone.utc).isoformat(),
+            )
+            return
+
+    t = _RealBackgroundThread(target=_watch, daemon=True, name=f"screen-all-watchdog-{job_id[:8]}")
+    t.start()
+    return t
+
+
+@app.get("/api/diagnostics/threads")
+def diagnostics_threads() -> Dict[str, Any]:
+    """Live stack of every thread, for diagnosing a stuck scan without py-spy."""
+    from tradingagents.dataflows.thread_diagnostics import all_thread_stacks
+
+    return {"threads": all_thread_stacks()}
 
 
 _MAX_ACTIVE_JOBS = 20  # Prevent unbounded queue growth
@@ -3068,11 +3201,12 @@ _SCAN_ALL_EXCLUDED_STRATEGIES = frozenset({
     "movers",
     "long_horizon",
     "multi_sleeve",
+    "multi_sleeve_union",
 })
 _REVERSAL_BATCH_STRATEGIES = frozenset({"reversal_buildup", "reversal_all_union"})
 _MOMENTUM_BATCH_STRATEGIES = frozenset({"early_momentum", "early_momentum_union"})
 _BASE_BATCH_STRATEGIES = frozenset({"base_coil", "base_coil_union"})
-_MULTI_SLEEVE_STRATEGIES = frozenset({"multi_sleeve"})
+_MULTI_SLEEVE_STRATEGIES = frozenset({"multi_sleeve", "multi_sleeve_union"})
 _WATCHLIST_SCREEN_MODES = frozenset({
     "standard", "reversal_buildup", "early_momentum", "base_coil", "multi_sleeve",
 })
@@ -3101,11 +3235,12 @@ def _is_scan_all_provenance_run(run: Optional[Dict[str, Any]]) -> bool:
         criteria.get("early_momentum_all_job_id")
         or criteria.get("reversal_all_job_id")
         or criteria.get("base_coil_all_job_id")
+        or criteria.get("multi_sleeve_all_job_id")
     ):
         return False
     if criteria.get("screen_all_job_id"):
         return True
-    if criteria.get("source_mode") in {"per_watchlist", "union_buckets"}:
+    if criteria.get("source_mode") in {"per_watchlist", "union_buckets", "selected_watchlists"}:
         if strategy in {"screen_all", "screen_all_union"}:
             return True
     return False
@@ -3137,15 +3272,19 @@ def _is_lens_scan_all_run(run: Optional[Dict[str, Any]], lens: str) -> bool:
     if lens == "reversal":
         if strategy not in _REVERSAL_BATCH_STRATEGIES:
             return False
-        return bool(criteria.get("reversal_all_job_id") or source in {"per_watchlist", "union_buckets"})
+        return bool(criteria.get("reversal_all_job_id") or source in {"per_watchlist", "union_buckets", "selected_watchlists"})
     if lens == "momentum":
         if strategy not in _MOMENTUM_BATCH_STRATEGIES:
             return False
-        return bool(criteria.get("early_momentum_all_job_id") or source in {"per_watchlist", "union_buckets"})
+        return bool(criteria.get("early_momentum_all_job_id") or source in {"per_watchlist", "union_buckets", "selected_watchlists"})
     if lens == "base":
         if strategy not in _BASE_BATCH_STRATEGIES:
             return False
-        return bool(criteria.get("base_coil_all_job_id") or source in {"per_watchlist", "union_buckets"})
+        return bool(criteria.get("base_coil_all_job_id") or source in {"per_watchlist", "union_buckets", "selected_watchlists"})
+    if lens == "multi":
+        if strategy not in _MULTI_SLEEVE_STRATEGIES:
+            return False
+        return bool(criteria.get("multi_sleeve_all_job_id") or strategy == "multi_sleeve_union")
     return False
 
 
@@ -3157,6 +3296,8 @@ def _run_matches_lens(run: Optional[Dict[str, Any]], lens: str) -> bool:
         return strategy in _MOMENTUM_BATCH_STRATEGIES
     if lens == "base":
         return strategy in _BASE_BATCH_STRATEGIES
+    if lens == "multi":
+        return strategy in _MULTI_SLEEVE_STRATEGIES
     return strategy not in _SCAN_ALL_EXCLUDED_STRATEGIES
 
 
@@ -3168,6 +3309,8 @@ def _scan_all_job_id_for_lens(run: Optional[Dict[str, Any]], lens: str) -> Optio
         job = str(criteria.get("early_momentum_all_job_id") or "").strip()
     elif lens == "base":
         job = str(criteria.get("base_coil_all_job_id") or "").strip()
+    elif lens == "multi":
+        job = str(criteria.get("multi_sleeve_all_job_id") or "").strip()
     else:
         job = str(criteria.get("screen_all_job_id") or "").strip()
     return job or None
@@ -3253,7 +3396,7 @@ def _latest_runs_for_lens(
     Lenses are isolated: a newer reversal run does not hide an older opportunity
     run on the Opportunity board (and vice versa).
     """
-    if lens not in {"reversal", "momentum", "base", "opportunity"}:
+    if lens not in {"reversal", "momentum", "base", "opportunity", "multi"}:
         lens = "opportunity"
     scan_all_cfg = DEFAULT_CONFIG.get("screening", {}).get("scan_all", {}) or {}
     include_singles = bool(scan_all_cfg.get("overlay_fresher_single_runs", True))
@@ -3280,6 +3423,7 @@ def _latest_runs_for_lens(
         "momentum": "No momentum Scan All batch yet. Run Scan All with Scan mode = Early momentum (single-list runs stay in Screening Results).",
         "base": "No base Scan All batch yet. Base lists names still inside the range (single-list runs stay in Screening History).",
         "opportunity": "No opportunity Scan All batch yet. Run Scan All (single-list runs stay in Screening Results).",
+        "multi": "No All modes batch yet. Check two or more watchlists and run Scan selected with Scan mode = All modes.",
     }.get(lens, "No runs found.")
     if not matching:
         raise HTTPException(404, empty_detail)
@@ -3298,10 +3442,13 @@ def _latest_runs_for_lens(
         selected_runs.append(rows_sorted[0])
 
     scan_all_matching = [r for r in matching if _is_lens_scan_all_run(r, lens)]
+    newest_scan_all = None
     latest_job_id = None
     if scan_all_matching:
         newest_scan_all = max(scan_all_matching, key=_run_sort_key)
         latest_job_id = _scan_all_job_id_for_lens(newest_scan_all, lens)
+    newest_criteria = _parse_run_criteria((newest_scan_all or {}).get("criteria"))
+    newest_is_selected = str(newest_criteria.get("source_mode") or "") == "selected_watchlists"
 
     kept: List[Dict[str, Any]] = []
     for run in selected_runs:
@@ -3309,6 +3456,16 @@ def _latest_runs_for_lens(
         in_age = dt is not None and (now - dt).days <= max_age_days
         job = _scan_all_job_id_for_lens(run, lens)
         on_latest_job = bool(latest_job_id) and job == latest_job_id
+        if newest_is_selected:
+            if on_latest_job:
+                kept.append(run)
+                continue
+            prior = _older_scan_all_for_overlay(
+                run, by_watchlist.get(run.get("watchlist_id"), []), lens,
+            )
+            if prior and _scan_all_job_id_for_lens(prior, lens) == latest_job_id:
+                kept.append(run)
+            continue
         if in_age or on_latest_job:
             kept.append(run)
 
@@ -3365,6 +3522,14 @@ def _latest_runs_for_lens(
         "gap_minutes": batch_gap_minutes,
     }
     batch_criteria = _parse_run_criteria(annotated[0].get("criteria")) if annotated else {}
+    selected_watchlist_names = None
+    if newest_is_selected:
+        raw_names = newest_criteria.get("selected_watchlist_names") or []
+        if isinstance(raw_names, list):
+            selected_watchlist_names = [str(n) for n in raw_names if str(n).strip()]
+    scan_health = newest_criteria.get("scan_health") if not mixed else None
+    if not isinstance(scan_health, dict):
+        scan_health = None
     if mixed:
         source_mode = "mixed"
         universe_requested = None
@@ -3387,6 +3552,8 @@ def _latest_runs_for_lens(
         "universe_truncated": universe_truncated,
         "batch_window": batch_window,
         "batch_criteria": batch_criteria,
+        "selected_watchlist_names": selected_watchlist_names,
+        "scan_health": scan_health,
     }
 
 
@@ -3464,6 +3631,11 @@ def _normalize_screen_mode(raw: Optional[str], *, for_scan_all: bool = False) ->
     return mode
 
 
+def _is_union_style_source(source_mode: Optional[str]) -> bool:
+    """Union Scan All and selected-list unions share strategy names and engine limits."""
+    return str(source_mode or "") in {"union_buckets", "selected_watchlists"}
+
+
 def _screen_all_engine_criteria(screen_mode: str, source_mode: str, job_id: str) -> Dict[str, Any]:
     """Criteria passed into engine.scan for a Scan All job.
 
@@ -3477,28 +3649,34 @@ def _screen_all_engine_criteria(screen_mode: str, source_mode: str, job_id: str)
         meta["strategy"] = "reversal_buildup"
         meta["reversal_all_job_id"] = job_id
     elif screen_mode == "early_momentum":
-        meta["strategy"] = "early_momentum_union" if source_mode == "union_buckets" else "early_momentum"
+        meta["strategy"] = "early_momentum_union" if _is_union_style_source(source_mode) else "early_momentum"
         meta["early_momentum_all_job_id"] = job_id
-        if source_mode == "union_buckets":
+        if _is_union_style_source(source_mode):
             meta["run_enrich"] = False
     elif screen_mode == "base_coil":
-        meta["strategy"] = "base_coil_union" if source_mode == "union_buckets" else "base_coil"
+        meta["strategy"] = "base_coil_union" if _is_union_style_source(source_mode) else "base_coil"
         meta["base_coil_all_job_id"] = job_id
+    elif screen_mode == "multi_sleeve":
+        meta["strategy"] = "multi_sleeve"
+        meta["multi_sleeve_all_job_id"] = job_id
+        meta["run_enrich"] = False
     else:
         meta["screen_all_job_id"] = job_id
-        meta["strategy"] = "screen_all_union" if source_mode == "union_buckets" else "screen_all"
+        meta["strategy"] = "screen_all_union" if _is_union_style_source(source_mode) else "screen_all"
     return meta
 
 
 def _screen_all_persist_strategy(screen_mode: str, source_mode: str) -> str:
     """Strategy stamped on persisted per-watchlist runs after a Scan All job."""
     if screen_mode == "reversal_buildup":
-        return "reversal_all_union" if source_mode == "union_buckets" else "reversal_buildup"
+        return "reversal_all_union" if _is_union_style_source(source_mode) else "reversal_buildup"
     if screen_mode == "early_momentum":
-        return "early_momentum_union" if source_mode == "union_buckets" else "early_momentum"
+        return "early_momentum_union" if _is_union_style_source(source_mode) else "early_momentum"
     if screen_mode == "base_coil":
-        return "base_coil_union" if source_mode == "union_buckets" else "base_coil"
-    return "screen_all_union" if source_mode == "union_buckets" else "screen_all"
+        return "base_coil_union" if _is_union_style_source(source_mode) else "base_coil"
+    if screen_mode == "multi_sleeve":
+        return "multi_sleeve_union"
+    return "screen_all_union" if _is_union_style_source(source_mode) else "screen_all"
 
 
 def _job_cancel_requested(job_id: str) -> bool:
@@ -3533,6 +3711,17 @@ def _rank_rows_by_reversal(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
     ranked = [lift_reversal_fields(dict(row)) for row in rows]
     ranked.sort(key=lambda r: reversal_sort_key(r.get("reversal_buildup"), str(r.get("ticker") or "")))
+    for idx, row in enumerate(ranked, start=1):
+        row["rank"] = idx
+    return ranked
+
+
+def _rank_rows_by_multi_sleeve(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Lift union lead fields and sort. Does not recompute percentiles."""
+    from tradingagents.screening.multi_sleeve import _lead_sort_tuple, lift_multi_sleeve_fields
+
+    ranked = [lift_multi_sleeve_fields(dict(row)) for row in rows]
+    ranked.sort(key=lambda r: _lead_sort_tuple(r.get("multi_sleeve") or {}, str(r.get("ticker") or "")))
     for idx, row in enumerate(ranked, start=1):
         row["rank"] = idx
     return ranked
@@ -4226,7 +4415,7 @@ def run_screening_all(
     import threading as _threading
 
     req = body or ScreenAllRequest()
-    screen_mode = _normalize_screen_mode(req.mode, for_scan_all=True)
+    requested_mode = str(req.mode or "standard").strip().lower()
     db_path = req.db_path or db_path
     db = get_db(db_path)
     scan_all_cfg = DEFAULT_CONFIG.get("screening", {}).get("scan_all", {})
@@ -4238,6 +4427,35 @@ def run_screening_all(
         scan_mode = "per_watchlist"
     if scan_mode == "union_buckets" and not union_enabled:
         scan_mode = "per_watchlist"
+    raw_ids: List[int] = []
+    for raw in (req.watchlist_ids or []):
+        try:
+            raw_ids.append(int(raw))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="watchlist_ids must be integers")
+    watchlist_ids: List[int] = []
+    seen_ids = set()
+    for wid in raw_ids:
+        if wid not in seen_ids:
+            seen_ids.add(wid)
+            watchlist_ids.append(wid)
+    if len(watchlist_ids) == 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Select two or more watchlists, or use Run Scan for a single list.",
+        )
+    selection = "selected" if len(watchlist_ids) >= 2 else "all"
+    if requested_mode == "multi_sleeve":
+        if selection != "selected":
+            raise HTTPException(
+                status_code=400,
+                detail="multi_sleeve is watchlist Run Scan only; Scan All runs one lens at a time",
+            )
+        screen_mode = "multi_sleeve"
+    else:
+        screen_mode = _normalize_screen_mode(requested_mode, for_scan_all=True)
+    if selection == "selected":
+        scan_mode = "union_buckets"
     hard_max = int(DEFAULT_CONFIG.get("screening", {}).get("hard_max_watchlist_size", 2000))
     union_cap = min(
         max(200, int(scan_all_cfg.get("union_max_tickers", hard_max))),
@@ -4250,17 +4468,59 @@ def run_screening_all(
         ((DEFAULT_CONFIG.get("screening") or {}).get("movers") or {}).get("watchlist_name_prefix")
         or "Movers"
     )
-    for wl in watchlists:
-        if not _is_scan_all_eligible_watchlist(wl, movers_prefix):
-            continue
+
+    def _scannable_row(wl: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         tickers = [t.strip() for t in (wl.get("tickers") or "").split(",") if t.strip()]
-        if tickers:
-            scannable.append({"id": wl["id"], "name": wl["name"], "tickers": tickers,
-                              "preset": wl.get("default_preset")})
-            total_tickers += len(tickers)
+        if not tickers:
+            return None
+        return {
+            "id": wl["id"],
+            "name": wl["name"],
+            "tickers": tickers,
+            "preset": wl.get("default_preset"),
+        }
+
+    if selection == "selected":
+        by_id = {int(wl["id"]): wl for wl in watchlists}
+        rejected: List[int] = []
+        for wid in watchlist_ids:
+            wl = by_id.get(wid)
+            if not wl or not _is_scan_all_eligible_watchlist(wl, movers_prefix):
+                rejected.append(wid)
+                continue
+            row = _scannable_row(wl)
+            if row is None:
+                rejected.append(wid)
+                continue
+            scannable.append(row)
+        if rejected:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown or ineligible watchlist ids: {rejected}",
+            )
+        if len(scannable) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="Select two or more watchlists with tickers.",
+            )
+        seen_tickers = set()
+        for wl in scannable:
+            for ticker in wl["tickers"]:
+                seen_tickers.add(str(ticker).upper())
+        total_tickers = len(seen_tickers)
+    else:
+        for wl in watchlists:
+            if not _is_scan_all_eligible_watchlist(wl, movers_prefix):
+                continue
+            row = _scannable_row(wl)
+            if row:
+                scannable.append(row)
+                total_tickers += len(row["tickers"])
 
     if not scannable:
         raise HTTPException(status_code=400, detail="No watchlists with tickers found")
+    selected_names = [str(wl["name"]) for wl in scannable] if selection == "selected" else []
+    selected_ids = [int(wl["id"]) for wl in scannable] if selection == "selected" else []
 
     # Guard against queue overload (reuse same check as _submit_job)
     with _jobs_lock:
@@ -4280,18 +4540,38 @@ def run_screening_all(
         "ticker_count": total_tickers,
         "mode": scan_mode,
         "screen_mode": screen_mode,
+        "selection": selection,
+        "watchlist_names": selected_names,
     }
     _set_job(job_id, job_data)
 
     def _run_all_thread():
         """Runs on a dedicated daemon thread to avoid blocking the API thread pool."""
-        _update_job(job_id, status="running", started_at=datetime.now(timezone.utc).isoformat())
+        _update_job(
+            job_id,
+            status="running",
+            started_at=datetime.now(timezone.utc).isoformat(),
+            started_ts=_time.time(),
+        )
         started_monotonic = _time.monotonic()
         try:
             from tradingagents.screening.engine import ScreeningEngine
             from tradingagents.default_config import DEFAULT_CONFIG
             from tradingagents.dataflows.yfinance_limiter import get_yfinance_limiter
             from dataclasses import asdict as _asdict
+
+            # Failsafe: a job must reach a terminal status even if Yahoo hangs.
+            _budgets = _scan_all_budgets(total_tickers, len(scannable), scan_mode)
+            _update_job(
+                job_id,
+                budget_seconds=round(_budgets["union_budget"] if scan_mode == "union_buckets" else _budgets["per_watchlist_budget"], 1),
+            )
+            _start_job_watchdog(
+                job_id,
+                worker_name=f"screen-all-{job_id[:8]}",
+                stall_seconds=_budgets["stall_seconds"],
+                hard_limit_seconds=_budgets["hard_limit_seconds"],
+            )
 
             limiter = get_yfinance_limiter()
             if limiter.is_open():
@@ -4329,6 +4609,7 @@ def run_screening_all(
             failed = []
             mode_used = scan_mode
             momentum_enrich_cache: Dict[str, Dict[str, Any]] = {}
+            partial_watchlists: List[str] = []
 
             if scan_mode == "union_buckets":
                 universe = []
@@ -4340,7 +4621,7 @@ def run_screening_all(
                 deduped = list(dict.fromkeys(universe))
 
                 bucket_cfg = DEFAULT_CONFIG.get("screening", {}).get("scan_buckets", {})
-                bucket_enabled = bool(bucket_cfg.get("enabled", True))
+                bucket_enabled = bool(bucket_cfg.get("enabled", True)) and selection != "selected"
                 bucket_rows: Dict[str, List[str]] = {}
                 if bucket_enabled:
                     for bucket_name in ("large_cap", "mid_cap", "small_cap", "small_cap_breadth"):
@@ -4367,8 +4648,9 @@ def run_screening_all(
                     )
                 universe_requested = len(deduped)
                 capped_universe = deduped[:union_cap]
-                engine_meta = _screen_all_engine_criteria(screen_mode, "union_buckets", job_id)
-                persist_strategy = _screen_all_persist_strategy(screen_mode, "union_buckets")
+                persist_source = "selected_watchlists" if selection == "selected" else "union_buckets"
+                engine_meta = _screen_all_engine_criteria(screen_mode, persist_source, job_id)
+                persist_strategy = _screen_all_persist_strategy(screen_mode, persist_source)
                 def _union_scan_progress(info):
                     phase = str((info or {}).get("phase") or "scan")
                     current = int((info or {}).get("current") or 0)
@@ -4398,15 +4680,25 @@ def run_screening_all(
                     enable_enhanced=screen_mode not in {"reversal_buildup", "base_coil"},
                     criteria_meta=engine_meta,
                     progress_cb=_union_scan_progress,
+                    time_budget_seconds=_scan_all_budgets(
+                        len(capped_universe), len(scannable), scan_mode
+                    )["union_budget"],
                 )
                 if _job_cancel_requested(job_id):
-                    _update_job(
-                        job_id,
-                        status="cancelled",
-                        error="Cancelled by operator",
-                        ended_at=datetime.now(timezone.utc).isoformat(),
-                    )
+                    if not _job_is_terminal(job_id):
+                        _update_job(
+                            job_id,
+                            status="cancelled",
+                            error="Cancelled by operator",
+                            ended_at=datetime.now(timezone.utc).isoformat(),
+                        )
                     return
+                scan_health = _scan_health(engine)
+                if scan_health.get("partial"):
+                    logger.warning(
+                        "scan-all %s: PARTIAL union scan - %s tickers not scored (%s)",
+                        job_id[:8], scan_health.get("partial_ticker_count"), scan_health.get("partial_reasons"),
+                    )
                 if screen_mode == "early_momentum":
                     engine_meta["_enrich_cache"] = momentum_enrich_cache
                     try:
@@ -4434,6 +4726,8 @@ def run_screening_all(
                     union_rows = _rank_rows_by_momentum(union_rows)
                 elif screen_mode == "base_coil":
                     union_rows = _rank_rows_by_base(union_rows)
+                elif screen_mode == "multi_sleeve":
+                    union_rows = _rank_rows_by_multi_sleeve(union_rows)
                 else:
                     union_rows = sorted(union_rows, key=lambda r: float(r.get("composite_score", 0)), reverse=True)
 
@@ -4484,6 +4778,8 @@ def run_screening_all(
                         projected = _rank_rows_by_momentum(projected)
                     elif screen_mode == "base_coil":
                         projected = _rank_rows_by_base(projected)
+                    elif screen_mode == "multi_sleeve":
+                        projected = _rank_rows_by_multi_sleeve(projected)
                     else:
                         for rank, row in enumerate(projected, start=1):
                             row["rank"] = rank
@@ -4491,12 +4787,22 @@ def run_screening_all(
                         row["preset"] = wl.get("preset") or "default"
                     persist_criteria = {
                         "strategy": persist_strategy,
-                        "source_mode": "union_buckets",
+                        "source_mode": persist_source,
                         "preset": wl.get("preset") or "default",
                         "universe_requested": universe_requested,
                         "universe_scanned": len(capped_universe),
                         "universe_truncated": universe_requested > len(capped_universe),
                     }
+                    if scan_health:
+                        persist_criteria["scan_health"] = {
+                            "partial": bool(scan_health.get("partial")),
+                            "partial_ticker_count": int(scan_health.get("partial_ticker_count") or 0),
+                            "partial_reasons": scan_health.get("partial_reasons") or {},
+                            "universe_scanned": len(capped_universe),
+                        }
+                    if selection == "selected":
+                        persist_criteria["selected_watchlist_ids"] = selected_ids
+                        persist_criteria["selected_watchlist_names"] = selected_names
                     if screen_mode == "reversal_buildup":
                         persist_criteria["reversal_all_job_id"] = job_id
                     elif screen_mode == "early_momentum":
@@ -4508,6 +4814,8 @@ def run_screening_all(
                         persist_criteria["gated_out_count"] = gated
                     elif screen_mode == "base_coil":
                         persist_criteria["base_coil_all_job_id"] = job_id
+                    elif screen_mode == "multi_sleeve":
+                        persist_criteria["multi_sleeve_all_job_id"] = job_id
                     else:
                         persist_criteria["screen_all_job_id"] = job_id
                     run_id = db.save_screening_run(
@@ -4534,6 +4842,9 @@ def run_screening_all(
                     "universe_truncated": universe_requested > len(capped_universe),
                     "bucket_counts": {k: len(v) for k, v in bucket_rows.items()},
                     "duration_seconds": round(_time.monotonic() - started_monotonic, 3),
+                    "partial": bool(scan_health.get("partial")),
+                    "partial_ticker_count": int(scan_health.get("partial_ticker_count") or 0),
+                    "partial_reasons": scan_health.get("partial_reasons") or {},
                 }
                 try:
                     db.record_runtime_metric(
@@ -4543,6 +4854,9 @@ def run_screening_all(
                     )
                 except Exception:
                     pass
+                if _job_is_terminal(job_id):
+                    logger.warning("scan-all %s finished after being marked terminal; not overwriting status", job_id[:8])
+                    return
                 _update_job(
                     job_id,
                     status="completed",
@@ -4553,12 +4867,13 @@ def run_screening_all(
 
             for i, wl in enumerate(scannable):
                 if _job_cancel_requested(job_id):
-                    _update_job(
-                        job_id,
-                        status="cancelled",
-                        error="Cancelled by operator",
-                        ended_at=datetime.now(timezone.utc).isoformat(),
-                    )
+                    if not _job_is_terminal(job_id):
+                        _update_job(
+                            job_id,
+                            status="cancelled",
+                            error="Cancelled by operator",
+                            ended_at=datetime.now(timezone.utc).isoformat(),
+                        )
                     return
                 _update_job(job_id, progress={
                     "current": i + 1,
@@ -4589,9 +4904,12 @@ def run_screening_all(
                         # Momentum keeps enhanced Yahoo (Form 4 / revisions / SI). Reversal is OHLCV-only.
                         enable_enhanced=screen_mode not in {"reversal_buildup", "base_coil"},
                         criteria_meta=wl_criteria,
+                        time_budget_seconds=_budgets["per_watchlist_budget"],
                     )
                     completed += 1
                     total_results += len(results)
+                    if _scan_health(engine).get("partial"):
+                        partial_watchlists.append(wl["name"])
                 except Exception as exc:
                     logger.error("Scan-all: '%s' failed: %s", wl["name"], exc)
                     failed.append(wl["name"])
@@ -4608,6 +4926,8 @@ def run_screening_all(
                 "mode": mode_used,
                 "screen_mode": screen_mode,
                 "duration_seconds": round(_time.monotonic() - started_monotonic, 3),
+                "partial": bool(partial_watchlists),
+                "partial_watchlists": partial_watchlists,
             }
             try:
                 db.record_runtime_metric(
@@ -4617,6 +4937,9 @@ def run_screening_all(
                 )
             except Exception:
                 pass
+            if _job_is_terminal(job_id):
+                logger.warning("scan-all %s finished after being marked terminal; not overwriting status", job_id[:8])
+                return
             _update_job(job_id, status="completed", result=result,
                         ended_at=datetime.now(timezone.utc).isoformat())
         except Exception as exc:
@@ -4633,6 +4956,8 @@ def run_screening_all(
         "mode": scan_mode,
         "screen_mode": screen_mode,
         "union_feature_flag": union_enabled,
+        "selection": selection,
+        "watchlist_names": selected_names,
     }
 
 
@@ -4904,6 +5229,7 @@ def _get_reversal_all_consolidated(
         "universe_requested": selection["universe_requested"],
         "universe_scanned": selection["universe_scanned"],
         "universe_truncated": selection["universe_truncated"],
+        "selected_watchlist_names": selection.get("selected_watchlist_names") or [],
         "watchlist_summaries": sorted(watchlist_summaries, key=lambda x: x.get("avg_score") or 0, reverse=True),
         "long_setups": long_setups,
         "short_setups": short_setups,
@@ -5049,6 +5375,7 @@ def _get_momentum_all_consolidated(
         "universe_requested": selection["universe_requested"],
         "universe_scanned": selection["universe_scanned"],
         "universe_truncated": selection["universe_truncated"],
+        "selected_watchlist_names": selection.get("selected_watchlist_names") or [],
         "gated_out_count": gated_out_count,
         "watchlist_summaries": sorted(watchlist_summaries, key=lambda x: x.get("avg_score") or 0, reverse=True),
         "top_opportunities": combined,
@@ -5175,6 +5502,7 @@ def _get_base_all_consolidated(
         "universe_requested": selection["universe_requested"],
         "universe_scanned": selection["universe_scanned"],
         "universe_truncated": selection["universe_truncated"],
+        "selected_watchlist_names": selection.get("selected_watchlist_names") or [],
         "watchlist_summaries": sorted(watchlist_summaries, key=lambda x: x.get("avg_score") or 0, reverse=True),
         "top_opportunities": combined,
         "weakest_signals": visible[-bottom:] if bottom else [],
@@ -5376,6 +5704,123 @@ def _rebuild_watchlist_summaries(rows: List[Dict[str, Any]]) -> List[Dict[str, A
 
 
 @app.get("/api/screen-all/latest")
+def _get_multi_sleeve_all_consolidated(
+    top: int = 20,
+    bottom: int = 10,
+    db_path: str = "research.db",
+) -> Dict[str, object]:
+    """Consolidate a selected All modes batch. One row per ticker, union lead order."""
+    from tradingagents.screening.multi_sleeve import _lead_sort_tuple, lift_multi_sleeve_fields
+
+    db = get_db(db_path)
+    selection = _latest_runs_for_lens(db, "multi")
+    batch_runs = selection["runs"]
+
+    watchlist_summaries = []
+    all_results: List[Dict[str, Any]] = []
+    watchlists_per_ticker: Dict[str, set] = {}
+
+    for run in batch_runs:
+        results = db.get_screening_results(run["id"])
+        if not results:
+            continue
+        lifted_rows = []
+        for raw in results:
+            signals = raw.get("signals", {})
+            if isinstance(signals, str):
+                try:
+                    signals = json.loads(signals)
+                except (json.JSONDecodeError, TypeError):
+                    signals = {}
+            row = dict(raw)
+            row["signals"] = signals if isinstance(signals, dict) else {}
+            lift_multi_sleeve_fields(row)
+            row["watchlist_name"] = run.get("watchlist_name", "Unknown")
+            row["watchlist_id"] = run.get("watchlist_id")
+            row["run_id"] = run["id"]
+            lifted_rows.append(row)
+            all_results.append(row)
+            ticker = str(row.get("ticker") or "").upper()
+            if ticker:
+                watchlists_per_ticker.setdefault(ticker, set()).add(row["watchlist_name"])
+
+        scores = [
+            float(r.get("lead_score") or 0.0)
+            for r in lifted_rows
+            if r.get("lead_score") is not None
+        ]
+        top_row = min(
+            lifted_rows,
+            key=lambda rr: _lead_sort_tuple(rr.get("multi_sleeve") or {}, str(rr.get("ticker") or "")),
+        ) if lifted_rows else None
+        watchlist_summaries.append({
+            "watchlist_id": run.get("watchlist_id"),
+            "watchlist_name": run.get("watchlist_name", "Unknown"),
+            "run_id": run["id"],
+            "run_at": run.get("run_at"),
+            "source": run.get("_board_source") or "scan_all",
+            "ticker_count": len(lifted_rows),
+            "avg_score": round(sum(scores) / len(scores), 1) if scores else 0,
+            "max_score": round(max(scores), 1) if scores else 0,
+            "top_ticker": top_row.get("ticker") if top_row else None,
+            "top_score": round(float(top_row.get("lead_score") or 0.0), 1) if top_row else None,
+        })
+
+    best_per_ticker: Dict[str, dict] = {}
+    for row in all_results:
+        ticker = str(row.get("ticker") or "").upper()
+        if not ticker:
+            continue
+        current = best_per_ticker.get(ticker)
+        if current is None or _lead_sort_tuple(
+            row.get("multi_sleeve") or {}, ticker,
+        ) < _lead_sort_tuple(current.get("multi_sleeve") or {}, ticker):
+            best_per_ticker[ticker] = row
+
+    deduped = []
+    for ticker, row in best_per_ticker.items():
+        names = sorted(n for n in watchlists_per_ticker.get(ticker, set()) if n)
+        out = dict(row)
+        out["watchlist_breadth"] = len(names)
+        out["watchlist_names"] = names
+        deduped.append(out)
+    deduped.sort(key=lambda r: _lead_sort_tuple(r.get("multi_sleeve") or {}, str(r.get("ticker") or "")))
+    for idx, row in enumerate(deduped, start=1):
+        row["rank"] = idx
+
+    lead_counts = {"reversal": 0, "momentum": 0, "base": 0, "opportunity": 0}
+    for row in deduped:
+        sleeve = str(row.get("lead_sleeve") or "")
+        if sleeve in lead_counts:
+            lead_counts[sleeve] += 1
+
+    return {
+        "lens": "multi",
+        "strategy": "multi_sleeve",
+        "source_mode": selection["source_mode"],
+        "source_mix": selection["source_mix"],
+        "overlays": selection["overlays"],
+        "batch_window": selection["batch_window"],
+        "universe_requested": selection["universe_requested"],
+        "universe_scanned": selection["universe_scanned"],
+        "universe_truncated": selection["universe_truncated"],
+        "selected_watchlist_names": selection.get("selected_watchlist_names") or [],
+        "scan_health": selection.get("scan_health"),
+        "watchlist_summaries": sorted(watchlist_summaries, key=lambda x: x.get("avg_score") or 0, reverse=True),
+        "top_opportunities": deduped[:top] if top else deduped,
+        "weakest_signals": list(reversed(deduped[-bottom:])) if bottom else [],
+        "totals": {
+            "unique_tickers": len(deduped),
+            "visible_tickers": len(deduped),
+            "total_scored": len(all_results),
+            "reversal_count": lead_counts["reversal"],
+            "momentum_count": lead_counts["momentum"],
+            "base_count": lead_counts["base"],
+            "opportunity_count": lead_counts["opportunity"],
+        },
+    }
+
+
 def get_scan_all_consolidated(
     top: int = Query(20, ge=1, le=500),
     bottom: int = Query(10, ge=1, le=500),
@@ -5385,7 +5830,7 @@ def get_scan_all_consolidated(
     hide_blackout: bool = Query(False),
     hide_coverage: bool = Query(False),
     hide_counter_trend: bool = Query(False),
-    strategy: str = Query("standard", description="Lens: standard (opportunity), reversal_buildup, early_momentum, or base_coil"),
+    strategy: str = Query("standard", description="Lens: standard (opportunity), reversal_buildup, early_momentum, base_coil, or multi_sleeve"),
     db_path: str = "research.db",
 ) -> Dict[str, object]:
     """Get consolidated Cross-Watchlist results from the latest matching run per list.
@@ -5428,6 +5873,8 @@ def get_scan_all_consolidated(
         )
     if lens in {"base_coil", "base", "base_coil_union"}:
         return _get_base_all_consolidated(top=top, bottom=bottom, db_path=db_path)
+    if lens in {"multi_sleeve", "multi", "multi_sleeve_union"}:
+        return _get_multi_sleeve_all_consolidated(top=top, bottom=bottom, db_path=db_path)
     db = get_db(db_path)
     selection = _latest_runs_for_lens(db, "opportunity")
     batch_runs = selection["runs"]
@@ -5841,6 +6288,7 @@ def get_scan_all_consolidated(
         "universe_requested": selection["universe_requested"],
         "universe_scanned": selection["universe_scanned"],
         "universe_truncated": selection["universe_truncated"],
+        "selected_watchlist_names": selection.get("selected_watchlist_names") or [],
         "book": book_key or "all",
         "sort": sort,
         "watchlist_summaries": sorted(watchlist_summaries, key=lambda x: x.get("avg_score") or 0, reverse=True),

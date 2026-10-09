@@ -71,6 +71,8 @@ class TestScanAllBreakerGuard(unittest.TestCase):
             "webapp.app.get_db",
             return_value=fake_db,
         ), patch(
+            "webapp.app._start_job_watchdog",
+        ), patch(
             "tradingagents.screening.engine.ScreeningEngine",
             _FakeEngine,
         ), patch(
@@ -116,6 +118,8 @@ class TestScanAllBreakerGuard(unittest.TestCase):
         with patch.object(appmod, "DEFAULT_CONFIG", cfg), patch(
             "webapp.app.get_db",
             return_value=fake_db,
+        ), patch(
+            "webapp.app._start_job_watchdog",
         ), patch(
             "tradingagents.screening.engine.ScreeningEngine",
             _FakeEngine,
